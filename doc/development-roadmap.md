@@ -301,3 +301,81 @@
 - **문서화**: Confluence
 - **커뮤니케이션**: Slack, Discord
 - **API 개발 도구**: Postman, Insomnia
+
+## [부록] Next.js 15 기준 추천 프로젝트 폴더 구조
+
+### 1. 최상위 디렉토리 구조 예시
+
+```
+/project-root
+│
+├── app/                # Next.js App Router 기반 페이지(라우트) 폴더
+│   ├── layout.tsx      # 전체 레이아웃
+│   ├── page.tsx        # 메인 페이지
+│   ├── dashboard/      # 대시보드 관련 라우트
+│   ├── auth/           # 인증(로그인, 회원가입 등) 라우트
+│   ├── api/            # API 라우트 (Next.js API Route)
+│   └── ...             # 기타 페이지
+│
+├── components/         # 재사용 가능한 UI 컴포넌트
+│   ├── common/         # 공통 컴포넌트(버튼, 모달 등)
+│   └── ...             # 도메인별 컴포넌트
+│
+├── prisma/             # Prisma 관련 파일
+│   └── schema.prisma   # Prisma 스키마
+│
+├── public/             # 정적 파일(이미지, 폰트 등)
+│
+├── styles/             # 전역 스타일, Tailwind 등
+│
+├── utils/              # 유틸리티 함수, 헬퍼 함수
+│
+├── doc/                # 기획, 개발, 화면설계 등 문서
+│
+├── .env                # 환경 변수 파일
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+### 2. 폴더별 역할
+
+- **app/**  
+  Next.js의 App Router 기반 라우트(페이지, API, 레이아웃 등)
+
+  - `/app/api` 하위에 API 라우트(예: `/app/api/auth/login/route.ts`)
+  - `/app/auth` 하위에 로그인, 회원가입 등 인증 관련 페이지
+
+- **components/**  
+  재사용 가능한 UI 컴포넌트(버튼, 카드, 모달 등)
+
+  - 도메인별로 하위 폴더 분리 가능
+
+- **prisma/**  
+  Prisma ORM 관련 파일(스키마, 마이그레이션 등)
+
+- **public/**  
+  정적 파일(이미지, favicon, 폰트 등)
+
+- **styles/**  
+  전역 CSS, Tailwind 설정 등
+
+- **utils/**  
+  인증, 날짜, 포맷 등 유틸리티 함수
+
+- **doc/**  
+  기획, 개발, 화면설계, API 명세 등 문서
+
+### 3. 추가 팁
+
+- 도메인별로 app 하위에 폴더를 나누면 유지보수에 유리  
+  예) `/app/buildings`, `/app/tenants`, `/app/contracts` 등
+- API 라우트는 app/api/ 하위에 RESTful하게 구성  
+  예) `/app/api/buildings/route.ts`, `/app/api/auth/login/route.ts`
+- 컴포넌트는 최대한 재사용성을 고려해 설계
+- 문서화(doc) 폴더는 항상 최신화
+- 환경별 .env 파일 분리(.env, .env.development, .env.production 등)
+
+### 참고
+
+- doc/web-pages-structure.md, doc/development-roadmap.md, doc/building-management-plan.md 등 문서와 일치하도록 구조를 맞추면 협업과 유지보수에 매우 유리합니다.

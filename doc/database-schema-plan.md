@@ -8,7 +8,7 @@ model User {
   name          String
   email         String    @unique
   passwordHash  String
-  role          Role      @default(STAFF)
+  role          Role      @default(USER)
   phoneNumber   String?
   profileImage  String?
   createdAt     DateTime  @default(now())

@@ -1,0 +1,117 @@
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function RegisterPage() {
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "회원가입 실패");
+      setSuccess("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다...");
+      setForm({ name: "", email: "", password: "" });
+
+      // 3초 후 로그인 페이지로 리디렉션
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError("회원가입 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100">
+          회원가입
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block mb-1 text-gray-700 dark:text-gray-300">
+              이름
+            </label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-gray-700 dark:text-gray-300">
+              이메일
+            </label>
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-gray-700 dark:text-gray-300">
+              비밀번호
+            </label>
+            <input
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition disabled:opacity-50"
+          >
+            {loading ? "가입 중..." : "회원가입"}
+          </button>
+        </form>
+        {error && <p className="mt-4 text-red-500 text-center">{error}</p>}
+        {success && (
+          <p className="mt-4 text-green-600 text-center">{success}</p>
+        )}
+
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-center text-gray-600 dark:text-gray-400">
+            이미 계정이 있으신가요?{" "}
+            <Link
+              href="/auth/login"
+              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+            >
+              로그인하기
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
