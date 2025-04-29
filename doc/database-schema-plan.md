@@ -26,8 +26,8 @@ model User {
 enum Role {
   SUPER_ADMIN
   BUILDING_ADMIN
-  STAFF
-  TENANT_MANAGER
+  BUILDING_MANAGER
+  USER
 }
 ```
 
