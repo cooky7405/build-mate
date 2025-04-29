@@ -2,6 +2,7 @@
 
 ## 인증 API
 
+<!--
 ### 1. 로그인
 
 - **엔드포인트**: `POST /api/auth/login`
@@ -298,4 +299,4 @@
 
 - **엔드포인트**: `GET /api/statistics/maintenance-fees/analysis`
 - **쿼리 파라미터**: 기간, 건물ID
-- **응답**: 분석 데이터
+- **응답**: 분석 데이터 -->

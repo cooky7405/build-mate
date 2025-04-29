@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- 작업 전에 doc 폴더에 내용들을 참고해서 작업 진행 해줘
+- 라이브러리 설치 할때 nextjs 버전과 가장 호환성이 좋은 버전으로 설치 해줘
+- doc/building-management-plan.md 파일은 기획 내용을 정리 한거야 기획적인 내용은 여기를 참고 하면 돼.
+- ai 작업을 하다가 현재 프로젝트와 맞지 않은 내용은 이 파일에 추가하고 또 다시 실수를 하지 않도록 해줘.
+- Next.js 15.3.1 버전에서 사용 가능한 코드들을 사용해줘
