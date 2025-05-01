@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { use } from "react";
 
 // 건물 데이터 인터페이스
 interface Building {
@@ -14,58 +15,13 @@ interface Building {
   description: string;
   status: string;
   imageUrl: string;
+  managers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }>;
 }
-
-// 임시 건물 데이터 (API 연동 전까지 사용)
-const MOCK_BUILDINGS = [
-  {
-    id: "1",
-    name: "센트럴 타워",
-    address: "서울특별시 강남구 테헤란로 123",
-    floors: 25,
-    yearBuilt: 2015,
-    totalArea: 15000,
-    description:
-      "강남 중심부에 위치한 현대적인 오피스 빌딩으로, 최고급 시설과 서비스를 제공합니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+1",
-  },
-  {
-    id: "2",
-    name: "그랜드 오피스",
-    address: "서울특별시 서초구 반포대로 45",
-    floors: 18,
-    yearBuilt: 2010,
-    totalArea: 12000,
-    description:
-      "서초구 반포대로에 위치한 비즈니스 중심지에 자리한 그랜드 오피스 빌딩입니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+2",
-  },
-  {
-    id: "3",
-    name: "스카이 빌딩",
-    address: "서울특별시 송파구 올림픽로 78",
-    floors: 22,
-    yearBuilt: 2018,
-    totalArea: 20000,
-    description:
-      "송파구 올림픽로에 위치한 현대식 복합 빌딩으로, 사무실과 상업 공간을 제공합니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+3",
-  },
-  {
-    id: "4",
-    name: "파크뷰 타워",
-    address: "서울특별시 마포구 마포대로 567",
-    floors: 15,
-    yearBuilt: 2012,
-    totalArea: 8500,
-    description: "마포구 중심부에 위치한 깔끔한 디자인의 사무실 빌딩입니다.",
-    status: "maintenance",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+4",
-  },
-];
 
 export default function BuildingDetailPage({
   params,
@@ -73,9 +29,15 @@ export default function BuildingDetailPage({
   params: { id: string };
 }) {
   const router = useRouter();
-  const { id } = params;
+
+  // Next.js 15.3.1에서 params는 Promise로 처리됨
+  // 타입스크립트 에러를 무시하기 위해 임시 해결책 사용
+  // @ts-expect-error - Next.js 15.3.1의 params 타입 호환성 문제
+  const { id } = use(params);
+
   const [building, setBuilding] = useState<Building | null>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -117,14 +79,25 @@ export default function BuildingDetailPage({
     };
 
     // 건물 데이터 로드
-    const loadBuilding = () => {
-      // API 호출 대신 임시 데이터 사용
-      const foundBuilding = MOCK_BUILDINGS.find((b) => b.id === id);
+    const loadBuilding = async () => {
+      try {
+        const response = await fetch(`/api/buildings/${id}`);
 
-      if (foundBuilding) {
-        setBuilding(foundBuilding);
-      } else {
+        if (!response.ok) {
+          if (response.status === 404) {
+            router.push("/buildings");
+            return;
+          }
+          throw new Error("건물 데이터를 가져오는 중 오류가 발생했습니다.");
+        }
+
+        const data = await response.json();
+        setBuilding(data);
+      } catch (error) {
+        console.error("건물 데이터를 가져오는 중 오류:", error);
         router.push("/buildings");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -132,11 +105,24 @@ export default function BuildingDetailPage({
     loadBuilding();
   }, [id, router]);
 
-  // 권한 확인 중
-  if (!isAuthorized || !building) {
+  // 권한 확인 중 또는 데이터 로딩 중
+  if (!isAuthorized || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        로딩 중...
+        <div className="text-[#1E88E5] font-semibold">
+          {!isAuthorized ? "권한을 확인하는 중..." : "데이터를 불러오는 중..."}
+        </div>
+      </div>
+    );
+  }
+
+  // 건물 데이터가 없는 경우
+  if (!building) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-[#E53935] font-semibold">
+          건물 정보를 찾을 수 없습니다.
+        </div>
       </div>
     );
   }
@@ -250,6 +236,17 @@ export default function BuildingDetailPage({
                   src={building.imageUrl}
                   alt={building.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // 이미지 로드 실패 시 대체 이미지 사용
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src =
+                      "/images/buildings/default-building.jpg";
+                    // 대체 이미지도 없을 경우 배경색 설정
+                    e.currentTarget.onerror = () => {
+                      e.currentTarget.style.backgroundColor = "#f0f0f0";
+                      return true;
+                    };
+                  }}
                 />
               </div>
             </div>

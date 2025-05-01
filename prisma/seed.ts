@@ -65,6 +65,9 @@ async function main() {
 
   console.log("🏢 건물 시드 데이터 생성 중...");
 
+  // 로컬 이미지를 사용하는 대신 기본 이미지 URL
+  const defaultImageUrl = "/images/buildings/default-building.jpg";
+
   const buildings = [
     {
       name: "센트럴 타워",
@@ -75,7 +78,7 @@ async function main() {
       description:
         "강남 중심부에 위치한 현대적인 오피스 빌딩으로, 최고급 시설과 서비스를 제공합니다.",
       status: "active",
-      imageUrl: "https://via.placeholder.com/600x400?text=Building+1",
+      imageUrl: defaultImageUrl,
       managers: [
         createdUsers[Role.SUPER_ADMIN],
         createdUsers[Role.BUILDING_ADMIN],
@@ -91,7 +94,7 @@ async function main() {
       description:
         "서초구 반포대로에 위치한 비즈니스 중심지에 자리한 그랜드 오피스 빌딩입니다.",
       status: "active",
-      imageUrl: "https://via.placeholder.com/600x400?text=Building+2",
+      imageUrl: defaultImageUrl,
       managers: [
         createdUsers[Role.SUPER_ADMIN],
         createdUsers[Role.BUILDING_MANAGER],
@@ -106,7 +109,7 @@ async function main() {
       description:
         "송파구 올림픽로에 위치한 현대식 복합 빌딩으로, 사무실과 상업 공간을 제공합니다.",
       status: "active",
-      imageUrl: "https://via.placeholder.com/600x400?text=Building+3",
+      imageUrl: defaultImageUrl,
       managers: [
         createdUsers[Role.SUPER_ADMIN],
         createdUsers[Role.BUILDING_ADMIN],
@@ -120,7 +123,7 @@ async function main() {
       totalArea: 8500,
       description: "마포구 중심부에 위치한 깔끔한 디자인의 사무실 빌딩입니다.",
       status: "maintenance",
-      imageUrl: "https://via.placeholder.com/600x400?text=Building+4",
+      imageUrl: defaultImageUrl,
       managers: [createdUsers[Role.SUPER_ADMIN]],
     },
   ];

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { use } from "react";
 
 // 건물 데이터 인터페이스
 interface Building {
@@ -16,64 +17,18 @@ interface Building {
   imageUrl: string;
 }
 
-// 임시 건물 데이터 (API 연동 전까지 사용)
-const MOCK_BUILDINGS = [
-  {
-    id: "1",
-    name: "센트럴 타워",
-    address: "서울특별시 강남구 테헤란로 123",
-    floors: 25,
-    yearBuilt: 2015,
-    totalArea: 15000,
-    description:
-      "강남 중심부에 위치한 현대적인 오피스 빌딩으로, 최고급 시설과 서비스를 제공합니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+1",
-  },
-  {
-    id: "2",
-    name: "그랜드 오피스",
-    address: "서울특별시 서초구 반포대로 45",
-    floors: 18,
-    yearBuilt: 2010,
-    totalArea: 12000,
-    description:
-      "서초구 반포대로에 위치한 비즈니스 중심지에 자리한 그랜드 오피스 빌딩입니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+2",
-  },
-  {
-    id: "3",
-    name: "스카이 빌딩",
-    address: "서울특별시 송파구 올림픽로 78",
-    floors: 22,
-    yearBuilt: 2018,
-    totalArea: 20000,
-    description:
-      "송파구 올림픽로에 위치한 현대식 복합 빌딩으로, 사무실과 상업 공간을 제공합니다.",
-    status: "active",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+3",
-  },
-  {
-    id: "4",
-    name: "파크뷰 타워",
-    address: "서울특별시 마포구 마포대로 567",
-    floors: 15,
-    yearBuilt: 2012,
-    totalArea: 8500,
-    description: "마포구 중심부에 위치한 깔끔한 디자인의 사무실 빌딩입니다.",
-    status: "maintenance",
-    imageUrl: "https://via.placeholder.com/600x400?text=Building+4",
-  },
-];
-
 export default function BuildingEditPage({
   params,
 }: {
   params: { id: string };
 }) {
   const router = useRouter();
-  const { id } = params;
+
+  // Next.js 15.3.1에서 params는 Promise로 처리됨
+  // 타입스크립트 에러를 무시하기 위해 임시 해결책 사용
+  // @ts-expect-error - Next.js 15.3.1의 params 타입 호환성 문제
+  const { id } = use(params);
+
   const [formData, setFormData] = useState<Omit<Building, "id">>({
     name: "",
     address: "",
@@ -124,26 +79,36 @@ export default function BuildingEditPage({
     };
 
     // 건물 데이터 로드
-    const loadBuilding = () => {
-      // API 호출 대신 임시 데이터 사용
-      const foundBuilding = MOCK_BUILDINGS.find((b) => b.id === id);
+    const loadBuilding = async () => {
+      try {
+        setIsLoading(true);
 
-      if (foundBuilding) {
+        // 실제 API 호출
+        const response = await fetch(`/api/buildings/${id}`);
+
+        if (!response.ok) {
+          throw new Error("건물 정보를 가져오는데 실패했습니다");
+        }
+
+        const buildingData = await response.json();
+
+        // 폼 데이터 설정
         setFormData({
-          name: foundBuilding.name,
-          address: foundBuilding.address,
-          floors: foundBuilding.floors,
-          yearBuilt: foundBuilding.yearBuilt,
-          totalArea: foundBuilding.totalArea,
-          description: foundBuilding.description,
-          status: foundBuilding.status,
-          imageUrl: foundBuilding.imageUrl,
+          name: buildingData.name,
+          address: buildingData.address,
+          floors: buildingData.floors,
+          yearBuilt: buildingData.yearBuilt,
+          totalArea: buildingData.totalArea,
+          description: buildingData.description || "",
+          status: buildingData.status,
+          imageUrl: buildingData.imageUrl || "",
         });
-      } else {
+      } catch (error) {
+        console.error("건물 데이터 로드 중 오류:", error);
         router.push("/buildings");
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     checkAuth();
@@ -173,23 +138,21 @@ export default function BuildingEditPage({
     setIsSaving(true);
 
     try {
-      // API 호출 로직 (실제 구현 시)
-      // const response = await fetch(`/api/buildings/${id}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
+      // API 호출
+      const response = await fetch(`/api/buildings/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      // if (!response.ok) {
-      //   throw new Error('건물 정보 업데이트 실패');
-      // }
+      if (!response.ok) {
+        throw new Error("건물 정보 업데이트 실패");
+      }
 
       // 성공적으로 저장 후 상세 페이지로 이동
-      setTimeout(() => {
-        router.push(`/buildings/${id}`);
-      }, 1000);
+      router.push(`/buildings/${id}`);
     } catch (error) {
       console.error("건물 정보 저장 중 오류:", error);
       setIsSaving(false);

@@ -3,56 +3,34 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// 임시 건물 데이터 (API 연동 전까지 사용)
-const MOCK_BUILDINGS = [
-  {
-    id: "1",
-    name: "센트럴 타워",
-    address: "서울특별시 강남구 테헤란로 123",
-    floors: 25,
-    yearBuilt: 2015,
-    totalArea: 15000,
-    status: "active",
-    imageUrl: "https://via.placeholder.com/300x200?text=Building+1",
-  },
-  {
-    id: "2",
-    name: "그랜드 오피스",
-    address: "서울특별시 서초구 반포대로 45",
-    floors: 18,
-    yearBuilt: 2010,
-    totalArea: 12000,
-    status: "active",
-    imageUrl: "https://via.placeholder.com/300x200?text=Building+2",
-  },
-  {
-    id: "3",
-    name: "스카이 빌딩",
-    address: "서울특별시 송파구 올림픽로 78",
-    floors: 22,
-    yearBuilt: 2018,
-    totalArea: 20000,
-    status: "active",
-    imageUrl: "https://via.placeholder.com/300x200?text=Building+3",
-  },
-  {
-    id: "4",
-    name: "파크뷰 타워",
-    address: "서울특별시 마포구 마포대로 567",
-    floors: 15,
-    yearBuilt: 2012,
-    totalArea: 8500,
-    status: "maintenance",
-    imageUrl: "https://via.placeholder.com/300x200?text=Building+4",
-  },
-];
+// 건물 데이터 인터페이스
+interface Building {
+  id: string;
+  name: string;
+  address: string;
+  floors: number;
+  yearBuilt: number;
+  totalArea: number;
+  description?: string;
+  status: string;
+  imageUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  managers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  }>;
+}
 
 export default function BuildingsPage() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"table" | "card">("card");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [buildings, setBuildings] = useState(MOCK_BUILDINGS);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -98,15 +76,44 @@ export default function BuildingsPage() {
     checkAuth();
   }, [router]);
 
+  // 건물 데이터 가져오기
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchBuildings();
+    }
+  }, [isAuthorized, statusFilter]);
+
+  // API로부터 건물 목록 가져오기
+  const fetchBuildings = async () => {
+    setIsLoading(true);
+    try {
+      const apiUrl = `/api/buildings${
+        statusFilter !== "all" ? `?status=${statusFilter}` : ""
+      }`;
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        throw new Error("건물 데이터를 가져오는 중 오류가 발생했습니다.");
+      }
+
+      const data = await response.json();
+      setBuildings(data);
+    } catch (error) {
+      console.error("건물 데이터를 가져오는 중 오류:", error);
+      // 오류 발생 시 빈 배열 설정
+      setBuildings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 검색 및 필터링된 건물 목록
   const filteredBuildings = buildings.filter((building) => {
     const matchesSearch =
       building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       building.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || building.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+    // API에서 이미 상태 필터링을 수행하므로 클라이언트에서는 검색어만 필터링
+    return matchesSearch;
   });
 
   // 새 건물 추가 핸들러
@@ -118,6 +125,16 @@ export default function BuildingsPage() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         권한을 확인하는 중...
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-[#1E88E5] font-semibold">
+          데이터를 불러오는 중...
+        </div>
       </div>
     );
   }
@@ -360,6 +377,20 @@ export default function BuildingsPage() {
                       src={building.imageUrl}
                       alt={building.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // 이미지 로드 실패 시 대체 이미지 또는 기본 스타일로 변경
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src =
+                          "/images/buildings/default-building.jpg";
+                        // 대체 이미지도 없을 경우 배경색 설정
+                        e.currentTarget.onerror = () => {
+                          e.currentTarget.style.backgroundColor = "#f0f0f0";
+                          e.currentTarget.style.display = "flex";
+                          e.currentTarget.style.alignItems = "center";
+                          e.currentTarget.style.justifyContent = "center";
+                          return true;
+                        };
+                      }}
                     />
                     <div className="absolute top-4 right-4">
                       <span
