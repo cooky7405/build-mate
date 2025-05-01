@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 
 export default function ManagerDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -153,10 +154,12 @@ export default function ManagerDashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                인력
+                <Link href="/buildings" className="flex-1">
+                  건물 관리
+                </Link>
               </li>
             </ul>
           </nav>
@@ -274,10 +277,12 @@ export default function ManagerDashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                인력
+                <Link href="/buildings" className="flex-1">
+                  건물 관리
+                </Link>
               </li>
             </ul>
           </nav>
@@ -286,7 +291,7 @@ export default function ManagerDashboard() {
         {/* 메인 컨텐츠 */}
         <main className="flex-1 p-8 space-y-6">
           {/* 상태 요약 카드 */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-sm p-6 border border-[#E0E0E0] dark:border-[#333333]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-[#263238] dark:text-white">
@@ -362,6 +367,45 @@ export default function ManagerDashboard() {
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-sm p-6 border border-[#E0E0E0] dark:border-[#333333]">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#263238] dark:text-white">
+                    건물 수
+                  </h2>
+                  <p className="text-[#607D8B] dark:text-[#B0BEC5] text-sm">
+                    현재 관리 중
+                  </p>
+                </div>
+                <div className="p-2 bg-[#26A69A]/10 rounded-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-[#26A69A]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <Link href="/buildings" className="block">
+                <p className="text-2xl font-bold text-[#263238] dark:text-white">
+                  3
+                </p>
+                <div className="flex items-center mt-2">
+                  <span className="text-[#26A69A] bg-[#26A69A]/10 px-2 py-1 rounded text-xs font-medium flex items-center">
+                    담당 건물
+                  </span>
+                </div>
+              </Link>
             </div>
           </section>
 

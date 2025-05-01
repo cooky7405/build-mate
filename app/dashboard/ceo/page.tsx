@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 
 export default function CeoDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -164,6 +165,25 @@ export default function CeoDashboard() {
                 </svg>
                 설정
               </li>
+              <li className="px-3 py-2 rounded-lg text-[#607D8B] dark:text-[#B0BEC5] hover:bg-[#F5F7FA] dark:hover:bg-[#333333] transition-colors flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                <Link href="/buildings" className="flex-1">
+                  건물 관리
+                </Link>
+              </li>
             </ul>
           </nav>
         </aside>
@@ -290,6 +310,25 @@ export default function CeoDashboard() {
                   />
                 </svg>
                 설정
+              </li>
+              <li className="px-3 py-2 rounded-lg text-[#607D8B] dark:text-[#B0BEC5] hover:bg-[#F5F7FA] dark:hover:bg-[#333333] transition-colors flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                <Link href="/buildings" className="flex-1">
+                  건물 관리
+                </Link>
               </li>
             </ul>
           </nav>
@@ -434,31 +473,33 @@ export default function CeoDashboard() {
                   </svg>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-[#263238] dark:text-white">
-                12
-              </p>
-              <div className="flex items-center mt-2">
-                <span className="text-[#43A047] bg-[#43A047]/10 px-2 py-1 rounded text-xs font-medium flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-3 w-3 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 10l7-7m0 0l7 7m-7-7v18"
-                    />
-                  </svg>
-                  2
-                </span>
-                <span className="text-[#607D8B] dark:text-[#B0BEC5] text-xs ml-2">
-                  전년 대비
-                </span>
-              </div>
+              <Link href="/buildings" className="block">
+                <p className="text-2xl font-bold text-[#263238] dark:text-white">
+                  12
+                </p>
+                <div className="flex items-center mt-2">
+                  <span className="text-[#43A047] bg-[#43A047]/10 px-2 py-1 rounded text-xs font-medium flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 10l7-7m0 0l7 7m-7-7v18"
+                      />
+                    </svg>
+                    2
+                  </span>
+                  <span className="text-[#607D8B] dark:text-[#B0BEC5] text-xs ml-2">
+                    전년 대비
+                  </span>
+                </div>
+              </Link>
             </div>
           </section>
 

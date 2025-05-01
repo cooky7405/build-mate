@@ -17,6 +17,9 @@ model User {
   profileImage String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  
+  // 관계
+  buildings    Building[] @relation("BuildingManagers")
 }
 
 enum Role {
@@ -24,4 +27,21 @@ enum Role {
   BUILDING_ADMIN
   BUILDING_MANAGER
   USER
+} 
+
+model Building {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  floors       Int
+  yearBuilt    Int?
+  totalArea    Float?   // 제곱미터
+  description  String?
+  imageUrl     String?
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // 관계
+  managers     User[]   @relation("BuildingManagers")
 } 
