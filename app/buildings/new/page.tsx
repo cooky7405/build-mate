@@ -90,25 +90,24 @@ export default function NewBuildingPage() {
     setIsSaving(true);
 
     try {
-      // API 호출 로직 (실제 구현 시)
-      // const response = await fetch('/api/buildings', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
+      // API 호출 로직 실행
+      const response = await fetch("/api/buildings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      // if (!response.ok) {
-      //   throw new Error('건물 생성 실패');
-      // }
+      if (!response.ok) {
+        throw new Error("건물 생성 실패");
+      }
 
-      // const data = await response.json();
+      const data = await response.json();
+      console.log("생성된 건물 데이터:", data);
 
       // 성공적으로 저장 후 목록 페이지로 이동
-      setTimeout(() => {
-        router.push("/buildings");
-      }, 1000);
+      router.push("/buildings");
     } catch (error) {
       console.error("건물 추가 중 오류:", error);
       setIsSaving(false);
