@@ -1,9 +1,32 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function CeoDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [buildingCount, setBuildingCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // 건물 목록을 가져와서 개수 계산
+    const fetchBuildingCount = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/buildings");
+        if (!response.ok) {
+          throw new Error("건물 목록을 가져오는데 실패했습니다");
+        }
+        const buildings = await response.json();
+        setBuildingCount(buildings.length);
+      } catch (error) {
+        console.error("건물 수 가져오기 오류:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBuildingCount();
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -475,7 +498,11 @@ export default function CeoDashboard() {
               </div>
               <Link href="/buildings" className="block">
                 <p className="text-2xl font-bold text-[#263238] dark:text-white">
-                  12
+                  {isLoading ? (
+                    <span className="inline-block w-6 h-6 bg-[#E0E0E0] dark:bg-[#333333] rounded animate-pulse"></span>
+                  ) : (
+                    buildingCount
+                  )}
                 </p>
                 <div className="flex items-center mt-2">
                   <span className="text-[#43A047] bg-[#43A047]/10 px-2 py-1 rounded text-xs font-medium flex items-center">
@@ -493,7 +520,7 @@ export default function CeoDashboard() {
                         d="M5 10l7-7m0 0l7 7m-7-7v18"
                       />
                     </svg>
-                    2
+                    {buildingCount > 10 ? buildingCount - 10 : 0}
                   </span>
                   <span className="text-[#607D8B] dark:text-[#B0BEC5] text-xs ml-2">
                     전년 대비
