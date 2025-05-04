@@ -3,12 +3,17 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
+interface TaskParams {
+  id: string;
+}
+
 // 특정 업무 조회 API
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
 
     const task = await prisma.task.findUnique({
@@ -81,9 +86,10 @@ export async function GET(
 // 업무 수정 API
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
     const data = await req.json();
 
@@ -153,9 +159,10 @@ export async function PUT(
 // 업무 삭제 API
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
 
     // 업무 존재 여부 확인

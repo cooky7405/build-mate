@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import TaskDetails from "@/app/components/tasks/TaskDetails";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { use } from "react";
 
 interface TaskDetail {
   id: string;
@@ -63,10 +64,12 @@ interface TaskDetail {
   } | null;
 }
 
+interface TaskParams {
+  id: string;
+}
+
 interface TaskPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<TaskParams>;
 }
 
 export default function TaskPage({ params }: TaskPageProps) {
@@ -74,7 +77,7 @@ export default function TaskPage({ params }: TaskPageProps) {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { id } = params;
+  const { id } = use(params);
 
   useEffect(() => {
     const fetchTask = async () => {

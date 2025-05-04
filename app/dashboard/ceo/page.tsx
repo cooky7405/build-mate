@@ -877,10 +877,10 @@ export default function CeoDashboard() {
                 최신 업무 템플릿 현황
               </h2>
               <Link
-                href="/tasks/templates"
+                href="/task-templates/stats"
                 className="text-[#1E88E5] hover:underline text-sm font-medium"
               >
-                모두 보기
+                업무 템플릿 현황 보기
               </Link>
             </div>
 
@@ -896,75 +896,80 @@ export default function CeoDashboard() {
             ) : (
               <div className="space-y-4">
                 {taskTemplates.map((template) => (
-                  <div
+                  <Link
+                    href={`/task-templates/${template.id}`}
                     key={template.id}
-                    className="border border-[#E0E0E0] dark:border-[#333333] rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="block"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-medium text-[#263238] dark:text-white">
-                          {template.title}
-                        </h3>
-                        <p className="text-[#607D8B] dark:text-[#B0BEC5] text-sm line-clamp-1">
-                          {template.description}
-                        </p>
+                    <div className="border border-[#E0E0E0] dark:border-[#333333] rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium text-[#263238] dark:text-white">
+                            {template.title}
+                          </h3>
+                          <p className="text-[#607D8B] dark:text-[#B0BEC5] text-sm line-clamp-1">
+                            {template.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadgeColor(
+                              template.priority
+                            )}`}
+                          >
+                            {template.priority}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium bg-[#1E88E5]/10 text-[#1E88E5]`}
+                          >
+                            {template.category}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadgeColor(
-                            template.priority
-                          )}`}
-                        >
-                          {template.priority}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium bg-[#1E88E5]/10 text-[#1E88E5]`}
-                        >
-                          {template.category}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="flex justify-between items-center mt-3">
-                      <div className="flex items-center space-x-4">
-                        <div>
-                          <p className="text-xs text-[#9E9E9E]">총 업무</p>
-                          <p className="font-medium text-[#263238] dark:text-white">
-                            {template.totalTasks}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-[#9E9E9E]">완료</p>
-                          <p className="font-medium text-[#43A047]">
-                            {template.completedTasks}
-                          </p>
-                        </div>
-                        <div className="w-24">
-                          <p className="text-xs text-[#9E9E9E] mb-1">진행률</p>
-                          <div className="w-full bg-[#F5F7FA] dark:bg-[#333333] rounded-full h-2">
-                            <div
-                              className="bg-[#1E88E5] h-2 rounded-full"
-                              style={{
-                                width: `${
-                                  template.totalTasks > 0
-                                    ? (template.completedTasks /
-                                        template.totalTasks) *
-                                      100
-                                    : 0
-                                }%`,
-                              }}
-                            ></div>
+                      <div className="flex justify-between items-center mt-3">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <p className="text-xs text-[#9E9E9E]">총 업무</p>
+                            <p className="font-medium text-[#263238] dark:text-white">
+                              {template.totalTasks}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#9E9E9E]">완료</p>
+                            <p className="font-medium text-[#43A047]">
+                              {template.completedTasks}
+                            </p>
+                          </div>
+                          <div className="w-24">
+                            <p className="text-xs text-[#9E9E9E] mb-1">
+                              진행률
+                            </p>
+                            <div className="w-full bg-[#F5F7FA] dark:bg-[#333333] rounded-full h-2">
+                              <div
+                                className="bg-[#1E88E5] h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    template.totalTasks > 0
+                                      ? (template.completedTasks /
+                                          template.totalTasks) *
+                                        100
+                                      : 0
+                                  }%`,
+                                }}
+                              ></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-[#9E9E9E]">등록일</p>
-                        <p className="text-sm text-[#607D8B] dark:text-[#B0BEC5]">
-                          {formatDate(template.createdAt)}
-                        </p>
+                        <div className="text-right">
+                          <p className="text-xs text-[#9E9E9E]">등록일</p>
+                          <p className="text-sm text-[#607D8B] dark:text-[#B0BEC5]">
+                            {formatDate(template.createdAt)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

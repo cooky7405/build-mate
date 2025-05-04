@@ -3,12 +3,17 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
+interface TaskCompleteParams {
+  id: string;
+}
+
 // 업무 완료 보고 제출 API
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskCompleteParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
     const data = await req.json();
 
@@ -58,9 +63,9 @@ export async function POST(
       const report = await tx.taskCompletionReport.create({
         data: {
           taskId: id,
-          reporterId: data.reporterId, // 사용자 인증 구현 후 세션에서 가져올 예정
           content: data.content,
-          attachmentUrls: data.attachmentUrls || [],
+          imageUrls: "", // 기본값 또는 data에서 받아올 수 있으면 추가
+          timeSpent: 0, // 기본값 또는 data에서 받아올 수 있으면 추가
         },
       });
 
@@ -82,9 +87,10 @@ export async function POST(
 // 업무 완료 보고 수정 API
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskCompleteParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
     const data = await req.json();
 
@@ -124,9 +130,7 @@ export async function PUT(
       where: { taskId: id },
       data: {
         content: data.content,
-        attachmentUrls:
-          data.attachmentUrls || task.completionReport.attachmentUrls,
-        updatedAt: new Date(),
+        // updatedAt: new Date(), // Prisma가 자동 처리
       },
     });
 

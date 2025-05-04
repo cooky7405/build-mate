@@ -17,16 +17,18 @@ interface Building {
   imageUrl: string;
 }
 
+interface BuildingEditParams {
+  id: string;
+}
+
 export default function BuildingEditPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<BuildingEditParams>;
 }) {
   const router = useRouter();
 
   // Next.js 15.3.1에서 params는 Promise로 처리됨
-  // 타입스크립트 에러를 무시하기 위해 임시 해결책 사용
-  // @ts-expect-error - Next.js 15.3.1의 params 타입 호환성 문제
   const { id } = use(params);
 
   const [formData, setFormData] = useState<Omit<Building, "id">>({

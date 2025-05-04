@@ -3,12 +3,17 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
+interface TaskTemplateParams {
+  id: string;
+}
+
 // 특정 업무 템플릿 조회 API
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskTemplateParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
 
     const taskTemplate = await prisma.taskTemplate.findUnique({
@@ -37,9 +42,10 @@ export async function GET(
 // 업무 템플릿 수정 API
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskTemplateParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
     const data = await req.json();
 
@@ -82,9 +88,10 @@ export async function PUT(
 // 업무 템플릿 삭제 API
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<TaskTemplateParams> }
 ) {
   try {
+    const params = await context.params;
     const { id } = params;
 
     // 업무 템플릿 존재 여부 확인

@@ -152,11 +152,18 @@ export default function TaskTemplatesPage() {
     <div className="container mx-auto py-8">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold">업무 템플릿 관리</h1>
-        <Link href="/task-templates/new">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded">
-            새 템플릿 추가
-          </button>
-        </Link>
+        <div className="flex space-x-3">
+          <Link href="/task-templates/stats">
+            <button className="px-4 py-2 bg-blue-500 text-white rounded">
+              업무 템플릿 현황 보기
+            </button>
+          </Link>
+          <Link href="/task-templates/new">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded">
+              새 템플릿 추가
+            </button>
+          </Link>
+        </div>
       </div>
 
       {error && (
@@ -232,7 +239,14 @@ export default function TaskTemplatesPage() {
               className="border rounded-md overflow-hidden bg-white shadow-sm"
             >
               <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{template.title}</h2>
+                <h2 className="text-xl font-semibold mb-2">
+                  <Link
+                    href={`/task-templates/${template.id}`}
+                    className="hover:text-blue-600"
+                  >
+                    {template.title}
+                  </Link>
+                </h2>
                 <p className="text-gray-600 mb-4 line-clamp-3">
                   {template.description}
                 </p>
@@ -251,6 +265,14 @@ export default function TaskTemplatesPage() {
               </div>
 
               <div className="px-4 py-3 bg-gray-50 flex justify-end space-x-2">
+                <Link
+                  href={`/task-templates/${template.id}`}
+                  className="flex-grow"
+                >
+                  <button className="w-full px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition">
+                    업무 상태 관리
+                  </button>
+                </Link>
                 <Link href={`/task-templates/${template.id}/edit`}>
                   <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded">
                     수정

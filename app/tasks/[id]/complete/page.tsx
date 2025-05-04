@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { use } from "react";
 
 interface Task {
   id: string;
@@ -22,15 +23,17 @@ interface Task {
   };
 }
 
+interface TaskParams {
+  id: string;
+}
+
 interface TaskCompletePageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<TaskParams>;
 }
 
 export default function TaskCompletePage({ params }: TaskCompletePageProps) {
   const router = useRouter();
-  const { id } = params;
+  const { id } = use(params);
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);

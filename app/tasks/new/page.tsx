@@ -3,11 +3,37 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Building {
   id: string;
   name: string;
   address: string;
+  category?: string;
 }
 
 interface TaskTemplate {
@@ -41,6 +67,9 @@ export default function NewTaskPage() {
 
   // 필터링 상태
   const [selectedManagerType, setSelectedManagerType] = useState<string>("all");
+  const [buildingSearchTerm, setBuildingSearchTerm] = useState("");
+  const [buildingCategoryFilter, setBuildingCategoryFilter] =
+    useState<string>("all");
 
   // 폼 데이터
   const [formData, setFormData] = useState({
@@ -51,8 +80,14 @@ export default function NewTaskPage() {
     dueDate: "",
   });
 
+  // 건물 카테고리 목록 (예시)
+  const [buildingCategories, setBuildingCategories] = useState<string[]>([]);
+
   // 에러 메시지
   const [error, setError] = useState<string | null>(null);
+
+  // 팝오버 열기/닫기 상태
+  const [open, setOpen] = useState(false);
 
   // 건물 목록 로드
   useEffect(() => {
@@ -64,6 +99,14 @@ export default function NewTaskPage() {
         }
         const data = await response.json();
         setBuildings(data);
+
+        // 건물 카테고리 추출
+        const categories = Array.from(
+          new Set(
+            data.map((building: Building) => building.category).filter(Boolean)
+          )
+        ) as string[];
+        setBuildingCategories(categories);
       } catch (err) {
         console.error("건물 목록 로드 오류:", err);
         setError("건물 목록을 불러오는 중 오류가 발생했습니다");
@@ -167,6 +210,41 @@ export default function NewTaskPage() {
     });
   };
 
+  // 선택된 건물 제거 핸들러
+  const handleRemoveBuilding = (buildingId: string) => {
+    setFormData({
+      ...formData,
+      buildingIds: formData.buildingIds.filter((id) => id !== buildingId),
+    });
+  };
+
+  // 필터링된 건물 목록
+  const getFilteredBuildings = () => {
+    let filtered = buildings;
+
+    // 검색어 필터링
+    if (buildingSearchTerm) {
+      filtered = filtered.filter(
+        (building) =>
+          building.name
+            .toLowerCase()
+            .includes(buildingSearchTerm.toLowerCase()) ||
+          building.address
+            .toLowerCase()
+            .includes(buildingSearchTerm.toLowerCase())
+      );
+    }
+
+    // 카테고리 필터링
+    if (buildingCategoryFilter !== "all") {
+      filtered = filtered.filter(
+        (building) => building.category === buildingCategoryFilter
+      );
+    }
+
+    return filtered;
+  };
+
   // 폼 제출 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,14 +309,17 @@ export default function NewTaskPage() {
     }
   };
 
+  // 선택된 건물들 정보
+  const selectedBuildings = buildings.filter((b) =>
+    formData.buildingIds.includes(b.id)
+  );
+
   return (
     <div className="container mx-auto py-8">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold">새 업무 추가</h1>
         <Link href="/tasks">
-          <button className="px-4 py-2 bg-gray-200 rounded">
-            목록으로 돌아가기
-          </button>
+          <Button variant="outline">목록으로 돌아가기</Button>
         </Link>
       </div>
 
@@ -249,58 +330,73 @@ export default function NewTaskPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4 p-6 bg-white rounded-md shadow-sm">
+        <div className="space-y-6 p-6 bg-white rounded-md shadow-sm">
           {/* 업무 템플릿 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              담당자 유형 필터
-            </label>
-            <select
-              value={selectedManagerType}
-              onChange={(e) => setSelectedManagerType(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              disabled={isLoading || submitting}
-            >
-              <option value="all">모든 유형</option>
-              <option value="ADMIN">관리책임자</option>
-              <option value="BIZ">경영책임자</option>
-              <option value="BOTH">공통</option>
-            </select>
-          </div>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold border-b pb-2">
+              업무 템플릿 선택
+            </h2>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              업무 템플릿 선택*
-            </label>
-            <select
-              name="templateId"
-              value={formData.templateId}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-              disabled={isLoading || submitting}
-              required
-            >
-              <option value="">업무 템플릿 선택</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.title} ({getManagerTypeLabel(template.managerType)})
-                </option>
-              ))}
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                담당자 유형 필터
+              </label>
+              <Select
+                value={selectedManagerType}
+                onValueChange={setSelectedManagerType}
+                disabled={isLoading || submitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="담당자 유형" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">모든 유형</SelectItem>
+                  <SelectItem value="ADMIN">관리책임자</SelectItem>
+                  <SelectItem value="BIZ">경영책임자</SelectItem>
+                  <SelectItem value="BOTH">공통</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            {formData.templateId && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                {templates.find((t) => t.id === formData.templateId)
-                  ?.description || ""}
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                업무 템플릿 선택*
+              </label>
+              <Select
+                value={formData.templateId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, templateId: value })
+                }
+                disabled={isLoading || submitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="업무 템플릿 선택" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.title} (
+                      {getManagerTypeLabel(template.managerType)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {formData.templateId && (
+                <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                  {templates.find((t) => t.id === formData.templateId)
+                    ?.description || ""}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 건물 선택 섹션 */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="font-medium text-gray-800">건물 선택*</h3>
-              <div className="flex items-center gap-2 ml-auto">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold border-b pb-2">건물 선택</h2>
+
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="allBuildings"
@@ -314,110 +410,212 @@ export default function NewTaskPage() {
                   htmlFor="allBuildings"
                   className="text-sm font-medium text-gray-700"
                 >
-                  모든 건물에 적용
+                  모든 건물에 적용 ({buildings.length}개)
                 </label>
               </div>
+
+              {formData.allBuildings && (
+                <div className="ml-2 text-blue-700 text-sm">
+                  전체 {buildings.length}개 건물에 업무가 할당됩니다.
+                </div>
+              )}
             </div>
 
             {!formData.allBuildings && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-                {buildings.map((building) => (
-                  <div
-                    key={building.id}
-                    onClick={() => handleBuildingSelection(building.id)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      formData.buildingIds.includes(building.id)
-                        ? "bg-blue-50 border-blue-300"
-                        : "bg-white hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.buildingIds.includes(building.id)}
-                        onChange={() => {}} // 변경은 div 클릭으로 처리
-                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded"
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      카테고리 필터
+                    </label>
+                    <Select
+                      value={buildingCategoryFilter}
+                      onValueChange={setBuildingCategoryFilter}
+                      disabled={isLoading || submitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">모든 카테고리</SelectItem>
+                        {buildingCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-1/2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      선택된 건물 수
+                    </label>
+                    <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
+                      <span className="font-medium">
+                        {formData.buildingIds.length}
+                      </span>
+                      <span className="text-gray-500 ml-1">
+                        / {buildings.length}개
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    건물 선택*
+                  </label>
+                  <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between h-auto min-h-10 py-2"
                         disabled={isLoading || submitting}
-                      />
-                      <div>
-                        <p className="font-medium">{building.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {building.address}
-                        </p>
+                      >
+                        건물 검색 및 선택
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-full p-0"
+                      style={{ width: "var(--radix-popover-trigger-width)" }}
+                    >
+                      <Command>
+                        <CommandInput
+                          placeholder="건물 검색..."
+                          onValueChange={setBuildingSearchTerm}
+                        />
+                        <CommandList className="max-h-[300px] overflow-auto">
+                          <CommandEmpty>일치하는 건물이 없습니다</CommandEmpty>
+                          <CommandGroup>
+                            {getFilteredBuildings().map((building) => (
+                              <CommandItem
+                                key={building.id}
+                                value={building.id}
+                                onSelect={() =>
+                                  handleBuildingSelection(building.id)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.buildingIds.includes(building.id)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{building.name}</span>
+                                  <span className="text-sm text-gray-500">
+                                    {building.address}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {formData.buildingIds.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      선택된 건물 목록
+                    </label>
+                    <div className="p-3 border rounded-md bg-gray-50 max-h-[200px] overflow-auto">
+                      <div className="flex flex-wrap gap-2">
+                        {selectedBuildings.map((building) => (
+                          <Badge
+                            key={building.id}
+                            variant="secondary"
+                            className="px-2 py-1 flex items-center gap-1"
+                          >
+                            <span className="max-w-[150px] truncate">
+                              {building.name}
+                            </span>
+                            <button
+                              type="button"
+                              className="text-gray-500 hover:text-gray-700"
+                              onClick={() => handleRemoveBuilding(building.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {formData.allBuildings && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-blue-700">
-                  모든 건물에 업무가 할당됩니다. ({buildings.length}개 건물)
-                </p>
+                )}
               </div>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              담당자 지정
-            </label>
-            <select
-              name="assigneeId"
-              value={formData.assigneeId}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-              disabled={isLoading || submitting}
-            >
-              <option value="">
-                담당자 미지정 (템플릿 유형에 따라 자동 할당)
-              </option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.email})
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-sm text-gray-500">
-              담당자를 지정하지 않으면 템플릿 유형에 따라 건물의 관리책임자나
-              경영책임자에게 자동 할당됩니다.
-            </p>
-          </div>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold border-b pb-2">
+              업무 세부 정보
+            </h2>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              마감일
-            </label>
-            <input
-              type="date"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-              disabled={isLoading || submitting}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                담당자 지정
+              </label>
+              <Select
+                value={formData.assigneeId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, assigneeId: value })
+                }
+                disabled={isLoading || submitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="담당자 미지정 (템플릿 유형에 따라 자동 할당)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    담당자 미지정 (템플릿 유형에 따라 자동 할당)
+                  </SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-sm text-gray-500">
+                담당자를 지정하지 않으면 템플릿 유형에 따라 건물의 관리책임자나
+                경영책임자에게 자동 할당됩니다.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                마감일
+              </label>
+              <Input
+                type="date"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleChange}
+                className="w-full"
+                disabled={isLoading || submitting}
+              />
+            </div>
           </div>
         </div>
 
         <div className="flex justify-end gap-2">
           <Link href="/tasks">
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-200 rounded"
-              disabled={submitting}
-            >
+            <Button type="button" variant="outline" disabled={submitting}>
               취소
-            </button>
+            </Button>
           </Link>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            disabled={isLoading || submitting}
-          >
+          <Button type="submit" disabled={isLoading || submitting}>
             {submitting ? "생성 중..." : "업무 생성"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

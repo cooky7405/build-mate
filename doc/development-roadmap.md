@@ -59,6 +59,7 @@
 
 - 업무 생성 및 할당 기능(SUPER-ADMin 이상)
 - 업무 상태 관리 및 추적 기능( 업무별, 빌딩별로 가능 해야 됨)
+- 업무 템플릿 별 관리 기능
 - 업무 완료 보고서 제출 기능
 - 업무 알림 기능
 
@@ -396,8 +397,44 @@
    npx shadcn@latest add [component-name]
    ```
 
-2. **Next.js 15.3.1 API 변경 사항 고려**
-   - React.use()를 사용하여 Promise 기반 API에 접근합니다.
-   - 필요한 경우 타입스크립트 오류를 피하기 위해 @ts-expect-error 주석을 사용합니다.
+2. **Next.js 15.3.1 API 라우트 처리 방식**
+
+   - API 라우트의 params, searchParams, cookies, headers 등이 모두 Promise 타입으로 변경되었습니다.
+   - API 라우트 핸들러 작성 시 반드시 다음 패턴을 따르세요:
+
+   ```typescript
+   // 올바른 방법 (Next.js 15.3.1)
+   interface RouteParams {
+     id: string;
+   }
+
+   export async function GET(
+     req: Request,
+     context: { params: Promise<RouteParams> }
+   ) {
+     const params = await context.params; // await 필수!
+     const { id } = params;
+
+     // ... 로직
+   }
+   ```
+
+3. **페이지 컴포넌트에서 Promise 기반 API 접근 시 use() 사용**
+
+   - 페이지 컴포넌트에서 params, searchParams 등에 접근할 때는 React.use()를 활용합니다.
+   - 페이지 컴포넌트 함수의 매개변수 타입에 Promise를 명시해야 합니다.
+
+   ```typescript
+   // 올바른 방법 (Next.js 15.3.1)
+   interface PageParams {
+     id: string;
+   }
+
+   export default function Page({ params }: { params: Promise<PageParams> }) {
+     const { id } = use(params);
+
+     // ... 로직
+   }
+   ```
 
 자세한 개발 가이드라인은 `doc/ai-development-rules.md` 파일을 참고하세요.
