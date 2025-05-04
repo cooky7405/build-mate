@@ -19,14 +19,20 @@ model User {
   updatedAt    DateTime @updatedAt
   
   // 관계
-  buildings    Building[] @relation("BuildingManagers")
+  buildings           Building[] @relation("BuildingManagers")           // 일반 관리자로 속한 빌딩들
+  adminManagedBuildings Building[] @relation("BuildingAdminManager")     // 관리 책임자로 담당하는 빌딩들 
+  bizManagedBuildings  Building[] @relation("BuildingBizManager")        // 경영 책임자로 담당하는 빌딩들
+  assignedTasks        Task[]     @relation("AssignedTo")                // 담당자로 할당된 업무
+  createdTasks         Task[]     @relation("TaskCreator")               // 생성한 업무
 }
 
 enum Role {
-  SUPER_ADMIN
-  BUILDING_ADMIN
-  BUILDING_MANAGER
-  USER
+  SUPER_ADMIN       // 전체 시스템 관리자
+  BUILDING_ADMIN    // 건물 관리자 (여러 빌딩 총괄)
+  ADMIN_MANAGER     // 관리 책임자 (시설/운영)
+  BIZ_MANAGER       // 경영 책임자 (수익/계약)
+  BUILDING_MANAGER  // 일반 빌딩 관리자
+  USER              // 일반 사용자
 } 
 
 model Building {
@@ -43,5 +49,96 @@ model Building {
   updatedAt    DateTime @updatedAt
   
   // 관계
-  managers     User[]   @relation("BuildingManagers")
+  managers      User[]  @relation("BuildingManagers")                    // 일반 관리자들
+  adminManagerId String? 
+  adminManager  User?   @relation("BuildingAdminManager", fields: [adminManagerId], references: [id])  // 관리 책임자
+  bizManagerId  String?
+  bizManager    User?   @relation("BuildingBizManager", fields: [bizManagerId], references: [id])      // 경영 책임자
+  tasks         Task[]                                                   // 빌딩에 할당된 업무들
+}
+
+// 업무 템플릿(업무 내용/유형)
+model TaskTemplate {
+  id            String      @id @default(cuid())
+  title         String      // 업무 제목(예: 소방 점검)
+  description   String      // 업무 상세 설명
+  priority      Priority    @default(MEDIUM)
+  managerType   ManagerType @default(ADMIN)
+  category      TaskCategory
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // 관계
+  tasks         Task[]
+}
+
+// 실제 업무
+model Task {
+  id            String      @id @default(cuid())
+  status        TaskStatus  @default(PENDING)
+  dueDate       DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  completedAt   DateTime?
+
+  // 관계
+  buildingId    String
+  building      Building    @relation(fields: [buildingId], references: [id])
+  templateId    String
+  template      TaskTemplate @relation(fields: [templateId], references: [id])
+  creatorId     String
+  creator       User        @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId    String?
+  assignee      User?       @relation("AssignedTo", fields: [assigneeId], references: [id])
+  completionReport TaskCompletionReport?
+}
+
+// 업무 완료 보고서
+model TaskCompletionReport {
+  id          String    @id @default(cuid())
+  content     String
+  imageUrls   String    // JSON 형태로 저장된 이미지 URL 배열
+  timeSpent   Int       // 분 단위
+  createdAt   DateTime  @default(now())
+
+  // 관계
+  taskId      String    @unique
+  task        Task      @relation(fields: [taskId], references: [id])
+}
+
+// 우선순위
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// 업무 상태
+enum TaskStatus {
+  PENDING      // 대기(지시만 된 상태)
+  IN_PROGRESS  // 담당자가 진행 중
+  COMPLETED    // 담당자가 완료 보고를 하면 COMPLETED로 변경
+  DELAYED      // 지연
+  CANCELLED    // 취소
+}
+
+// 책임자 유형
+enum ManagerType {
+  ADMIN    // 관리 책임자 담당
+  BIZ      // 경영 책임자 담당
+  BOTH     // 두 책임자 모두 관련
+}
+
+// 업무 카테고리
+enum TaskCategory {
+  MAINTENANCE    // 유지보수
+  SECURITY       // 보안
+  CLEANING       // 청소
+  INSPECTION     // 점검
+  FACILITY       // 시설관리
+  CONTRACT       // 계약관리 
+  FINANCIAL      // 재무관리
+  TENANT         // 입주자관리
+  OTHER          // 기타
 } 
