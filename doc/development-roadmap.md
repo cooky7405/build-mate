@@ -379,3 +379,25 @@
 ### 참고
 
 - doc/web-pages-structure.md, doc/development-roadmap.md, doc/building-management-plan.md 등 문서와 일치하도록 구조를 맞추면 협업과 유지보수에 매우 유리합니다.
+
+## AI 개발 도구 사용 시 주의사항
+
+빌딩메이트 프로젝트에서 AI 코드 생성 도구를 사용할 때 다음 사항에 유의해야 합니다:
+
+1. **UI 컴포넌트 추가 시 shadcn 패키지 사용**
+
+   - 반드시 shadcn 패키지를 사용해야 하며, 더 이상 shadcn-ui 패키지를 사용하지 않습니다.
+
+   ```bash
+   # 잘못된 사용법 (사용 금지)
+   npx shadcn-ui@latest add [component-name]
+
+   # 올바른 사용법
+   npx shadcn@latest add [component-name]
+   ```
+
+2. **Next.js 15.3.1 API 변경 사항 고려**
+   - React.use()를 사용하여 Promise 기반 API에 접근합니다.
+   - 필요한 경우 타입스크립트 오류를 피하기 위해 @ts-expect-error 주석을 사용합니다.
+
+자세한 개발 가이드라인은 `doc/ai-development-rules.md` 파일을 참고하세요.

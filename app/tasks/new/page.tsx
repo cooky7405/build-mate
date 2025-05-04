@@ -44,7 +44,8 @@ export default function NewTaskPage() {
 
   // 폼 데이터
   const [formData, setFormData] = useState({
-    buildingId: "",
+    buildingIds: [] as string[],
+    allBuildings: false,
     templateId: "",
     assigneeId: "",
     dueDate: "",
@@ -134,13 +135,52 @@ export default function NewTaskPage() {
     });
   };
 
+  // 체크박스 변경 핸들러
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: checked,
+      // 모든 건물 옵션을 선택하면 건물 목록 선택 초기화
+      ...(name === "allBuildings" && checked ? { buildingIds: [] } : {}),
+    });
+  };
+
+  // 건물 선택 변경 핸들러
+  const handleBuildingSelection = (buildingId: string) => {
+    const isSelected = formData.buildingIds.includes(buildingId);
+    let newBuildingIds: string[];
+
+    if (isSelected) {
+      // 선택 해제
+      newBuildingIds = formData.buildingIds.filter((id) => id !== buildingId);
+    } else {
+      // 선택 추가
+      newBuildingIds = [...formData.buildingIds, buildingId];
+    }
+
+    setFormData({
+      ...formData,
+      buildingIds: newBuildingIds,
+      // 건물을 선택하면 '모든 건물' 옵션은 해제
+      allBuildings: false,
+    });
+  };
+
   // 폼 제출 핸들러
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 필수 필드 검증
-    if (!formData.buildingId || !formData.templateId) {
-      alert("건물과 업무 템플릿은 필수 항목입니다");
+    if (!formData.templateId) {
+      alert("업무 템플릿은 필수 항목입니다");
+      return;
+    }
+
+    if (!formData.allBuildings && formData.buildingIds.length === 0) {
+      alert(
+        "최소 하나의 건물을 선택하거나 '모든 건물에 적용' 옵션을 선택해주세요"
+      );
       return;
     }
 
@@ -159,14 +199,18 @@ export default function NewTaskPage() {
       });
 
       if (!response.ok) {
-        throw new Error("업무 생성에 실패했습니다");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "업무 생성에 실패했습니다");
       }
 
       const data = await response.json();
-      router.push(`/tasks/${data.id}`);
-    } catch (err) {
+      alert(data.message || "업무가 성공적으로 생성되었습니다");
+      router.push("/tasks");
+    } catch (err: unknown) {
       console.error("업무 생성 오류:", err);
-      alert("업무 생성에 실패했습니다");
+      const errorMessage =
+        err instanceof Error ? err.message : "업무 생성에 실패했습니다";
+      alert(errorMessage);
       setSubmitting(false);
     }
   };
@@ -206,27 +250,7 @@ export default function NewTaskPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4 p-6 bg-white rounded-md shadow-sm">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              건물 선택*
-            </label>
-            <select
-              name="buildingId"
-              value={formData.buildingId}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md"
-              disabled={isLoading || submitting}
-              required
-            >
-              <option value="">건물 선택</option>
-              {buildings.map((building) => (
-                <option key={building.id} value={building.id}>
-                  {building.name} ({building.address})
-                </option>
-              ))}
-            </select>
-          </div>
-
+          {/* 업무 템플릿 선택 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               담당자 유형 필터
@@ -272,6 +296,70 @@ export default function NewTaskPage() {
             )}
           </div>
 
+          {/* 건물 선택 섹션 */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="font-medium text-gray-800">건물 선택*</h3>
+              <div className="flex items-center gap-2 ml-auto">
+                <input
+                  type="checkbox"
+                  id="allBuildings"
+                  name="allBuildings"
+                  checked={formData.allBuildings}
+                  onChange={handleCheckboxChange}
+                  disabled={isLoading || submitting}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="allBuildings"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  모든 건물에 적용
+                </label>
+              </div>
+            </div>
+
+            {!formData.allBuildings && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                {buildings.map((building) => (
+                  <div
+                    key={building.id}
+                    onClick={() => handleBuildingSelection(building.id)}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      formData.buildingIds.includes(building.id)
+                        ? "bg-blue-50 border-blue-300"
+                        : "bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.buildingIds.includes(building.id)}
+                        onChange={() => {}} // 변경은 div 클릭으로 처리
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        disabled={isLoading || submitting}
+                      />
+                      <div>
+                        <p className="font-medium">{building.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {building.address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formData.allBuildings && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-blue-700">
+                  모든 건물에 업무가 할당됩니다. ({buildings.length}개 건물)
+                </p>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               담당자 지정
@@ -283,13 +371,19 @@ export default function NewTaskPage() {
               className="w-full p-2 border rounded-md"
               disabled={isLoading || submitting}
             >
-              <option value="">담당자 미지정</option>
+              <option value="">
+                담당자 미지정 (템플릿 유형에 따라 자동 할당)
+              </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name} ({user.email})
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-sm text-gray-500">
+              담당자를 지정하지 않으면 템플릿 유형에 따라 건물의 관리책임자나
+              경영책임자에게 자동 할당됩니다.
+            </p>
           </div>
 
           <div>

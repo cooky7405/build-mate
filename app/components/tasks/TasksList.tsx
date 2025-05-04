@@ -20,6 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/ui/tabs";
 
 interface Task {
   id: string;
@@ -64,6 +70,12 @@ interface Task {
   } | null;
 }
 
+interface Template {
+  id: string;
+  title: string;
+  managerType: string;
+}
+
 interface TasksListProps {
   buildingId?: string;
   managerType?: string;
@@ -76,12 +88,35 @@ export default function TasksList({
   initialStatusFilter = "all",
 }: TasksListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 필터링 상태
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
+  const [templateFilter, setTemplateFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<string>("all");
+
+  // 업무 템플릿 목록 로드
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch("/api/task-templates");
+
+        if (!response.ok) {
+          throw new Error("업무 템플릿 목록을 가져오는데 실패했습니다");
+        }
+
+        const data = await response.json();
+        setTemplates(data);
+      } catch (err) {
+        console.error("업무 템플릿 로드 오류:", err);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   // fetchTasks를 useCallback으로 감싸줍니다
   const fetchTasks = useCallback(async () => {
@@ -94,6 +129,9 @@ export default function TasksList({
       if (managerType) params.append("managerType", managerType);
       if (statusFilter && statusFilter !== "all")
         params.append("status", statusFilter);
+      if (templateFilter && templateFilter !== "all")
+        params.append("templateId", templateFilter);
+      if (searchTerm) params.append("search", searchTerm);
 
       const response = await fetch(`/api/tasks?${params.toString()}`);
 
@@ -109,7 +147,7 @@ export default function TasksList({
     } finally {
       setLoading(false);
     }
-  }, [buildingId, managerType, statusFilter]); // 의존성 추가
+  }, [buildingId, managerType, statusFilter, templateFilter, searchTerm]); // 의존성 추가
 
   useEffect(() => {
     fetchTasks();
@@ -183,12 +221,39 @@ export default function TasksList({
     )}-${String(date.getDate()).padStart(2, "0")}`;
   };
 
-  // 검색어 필터링된 업무 목록
-  const filteredTasks = tasks.filter(
-    (task) =>
-      task.template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.building.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 업무가 최근 생성된 항목인지 확인 (24시간 이내)
+  const isRecentlyCreated = (dateString: string) => {
+    const createdDate = new Date(dateString);
+    const now = new Date();
+    const hoursDiff =
+      (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+    return hoursDiff <= 24;
+  };
+
+  // 현재 뷰 모드에 따른 필터링
+  const getFilteredTasks = () => {
+    let filtered = tasks;
+
+    // 검색어로 필터링
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (task) =>
+          task.template.title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          task.building.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // 뷰 모드에 따른 필터링
+    if (viewMode === "recent") {
+      filtered = filtered.filter((task) => isRecentlyCreated(task.createdAt));
+    }
+
+    return filtered;
+  };
+
+  const filteredTasks = getFilteredTasks();
 
   if (loading)
     return <div className="p-4 text-center">업무 목록을 불러오는 중...</div>;
@@ -196,10 +261,26 @@ export default function TasksList({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2 items-center">
+      <Tabs
+        defaultValue="all"
+        value={viewMode}
+        onValueChange={setViewMode}
+        className="w-full"
+      >
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+          <TabsList>
+            <TabsTrigger value="all">모든 업무</TabsTrigger>
+            <TabsTrigger value="recent">최근 생성 업무</TabsTrigger>
+          </TabsList>
+
+          <Link href="/tasks/new">
+            <Button>업무 추가</Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger>
               <SelectValue placeholder="상태별 필터" />
             </SelectTrigger>
             <SelectContent>
@@ -211,85 +292,111 @@ export default function TasksList({
             </SelectContent>
           </Select>
 
+          <Select value={templateFilter} onValueChange={setTemplateFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="템플릿별 필터" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">모든 템플릿</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Input
             placeholder="업무 또는 건물명 검색"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
           />
         </div>
 
-        <Link href="/tasks/new">
-          <Button>업무 추가</Button>
-        </Link>
-      </div>
+        <TabsContent value="all" className="mt-0">
+          {renderTasksTable(filteredTasks)}
+        </TabsContent>
+        <TabsContent value="recent" className="mt-0">
+          {renderTasksTable(filteredTasks)}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 
-      {filteredTasks.length === 0 ? (
+  function renderTasksTable(tasks: Task[]) {
+    if (tasks.length === 0) {
+      return (
         <div className="text-center p-8 border rounded-md">
           <p className="text-gray-500">표시할 업무가 없습니다</p>
         </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>업무</TableHead>
-              <TableHead>건물</TableHead>
-              <TableHead>담당자</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>마감일</TableHead>
-              <TableHead>분류</TableHead>
-              <TableHead>액션</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTasks.map((task) => (
-              <TableRow key={task.id}>
-                <TableCell>
-                  <div className="font-medium">{task.template.title}</div>
-                  <div className="text-sm text-gray-500 truncate max-w-xs">
-                    {task.template.description}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/buildings/${task.buildingId}`}
-                    className="hover:underline"
-                  >
-                    {task.building.name}
+      );
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>업무</TableHead>
+            <TableHead>건물</TableHead>
+            <TableHead>담당자</TableHead>
+            <TableHead>상태</TableHead>
+            <TableHead>마감일</TableHead>
+            <TableHead>분류</TableHead>
+            <TableHead>액션</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tasks.map((task) => (
+            <TableRow
+              key={task.id}
+              className={isRecentlyCreated(task.createdAt) ? "bg-blue-50" : ""}
+            >
+              <TableCell>
+                <div className="font-medium">{task.template.title}</div>
+                <div className="text-sm text-gray-500 truncate max-w-xs">
+                  {task.template.description}
+                </div>
+                {isRecentlyCreated(task.createdAt) && (
+                  <Badge className="bg-blue-100 text-blue-800 mt-1">신규</Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <Link
+                  href={`/buildings/${task.buildingId}`}
+                  className="hover:underline"
+                >
+                  {task.building.name}
+                </Link>
+              </TableCell>
+              <TableCell>{task.assignee ? task.assignee.name : "-"}</TableCell>
+              <TableCell>{getStatusBadge(task.status)}</TableCell>
+              <TableCell>{formatDate(task.dueDate)}</TableCell>
+              <TableCell>
+                {getManagerTypeBadge(task.template.managerType)}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Link href={`/tasks/${task.id}`}>
+                    <Button variant="outline" size="sm">
+                      상세
+                    </Button>
                   </Link>
-                </TableCell>
-                <TableCell>
-                  {task.assignee ? task.assignee.name : "-"}
-                </TableCell>
-                <TableCell>{getStatusBadge(task.status)}</TableCell>
-                <TableCell>{formatDate(task.dueDate)}</TableCell>
-                <TableCell>
-                  {getManagerTypeBadge(task.template.managerType)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Link href={`/tasks/${task.id}`}>
-                      <Button variant="outline" size="sm">
-                        상세
+                  {task.status !== "COMPLETED" && (
+                    <Link href={`/tasks/${task.id}/complete`}>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        완료 보고
                       </Button>
                     </Link>
-                    {task.status !== "COMPLETED" && (
-                      <Link href={`/tasks/${task.id}/complete`}>
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          완료 보고
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
-  );
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 }
