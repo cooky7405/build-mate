@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
 
 const prisma = new PrismaClient();
 
@@ -18,7 +17,7 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
 
     // 기본 쿼리 조건
-    let whereClause: any = {};
+    const whereClause: Record<string, unknown> = {};
 
     // 상태 필터 적용
     if (status && status !== "all") {

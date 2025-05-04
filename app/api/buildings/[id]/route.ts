@@ -6,9 +6,10 @@ const prisma = new PrismaClient();
 // 건물 상세 조회 API
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = params.id;
 
     const building = await prisma.building.findUnique({
@@ -47,9 +48,10 @@ export async function GET(
 // 건물 수정 API
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = params.id;
     const data = await req.json();
     const { managers, ...buildingData } = data;
@@ -105,9 +107,10 @@ export async function PUT(
 // 건물 삭제 API
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = params.id;
 
     // 건물 존재 여부 확인

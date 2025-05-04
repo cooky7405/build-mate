@@ -2,10 +2,28 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
+// TaskTemplateWithStats 인터페이스 정의
+interface TaskTemplateWithStats {
+  id: string;
+  title: string;
+  description: string;
+  priority: string;
+  managerType: string;
+  category: string;
+  createdAt: string;
+  totalTasks: number;
+  completedTasks: number;
+}
+
 export default function CeoDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [buildingCount, setBuildingCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplateWithStats[]>(
+    []
+  );
+  const [taskTemplatesLoading, setTaskTemplatesLoading] =
+    useState<boolean>(true);
 
   useEffect(() => {
     // 건물 목록을 가져와서 개수 계산
@@ -25,11 +43,170 @@ export default function CeoDashboard() {
       }
     };
 
+    // 업무 템플릿 및 통계 데이터 가져오기
+    const fetchTaskTemplates = async () => {
+      try {
+        setTaskTemplatesLoading(true);
+        const response = await fetch("/api/tasks/templates/stats");
+        if (!response.ok) {
+          // API가 아직 없을 경우 임시 데이터 사용
+          const mockData: TaskTemplateWithStats[] = [
+            {
+              id: "1",
+              title: "소방 설비 점검",
+              description: "소방법에 따른 월별 소방 설비 점검 및 보고서 작성",
+              priority: "HIGH",
+              managerType: "ADMIN",
+              category: "INSPECTION",
+              createdAt: new Date(
+                Date.now() - 8 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              totalTasks: 15,
+              completedTasks: 12,
+            },
+            {
+              id: "2",
+              title: "엘리베이터 정기 점검",
+              description: "엘리베이터 안전 점검 및 유지보수 작업",
+              priority: "HIGH",
+              managerType: "ADMIN",
+              category: "MAINTENANCE",
+              createdAt: new Date(
+                Date.now() - 15 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              totalTasks: 8,
+              completedTasks: 7,
+            },
+            {
+              id: "3",
+              title: "보안 카메라 점검",
+              description: "CCTV 카메라 작동 상태 및 저장 장치 점검",
+              priority: "MEDIUM",
+              managerType: "ADMIN",
+              category: "SECURITY",
+              createdAt: new Date(
+                Date.now() - 5 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              totalTasks: 10,
+              completedTasks: 5,
+            },
+            {
+              id: "4",
+              title: "임대차 계약 갱신",
+              description: "임대차 계약 만료 및 갱신 관리",
+              priority: "HIGH",
+              managerType: "BIZ",
+              category: "CONTRACT",
+              createdAt: new Date(
+                Date.now() - 2 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              totalTasks: 6,
+              completedTasks: 2,
+            },
+          ];
+          setTaskTemplates(mockData);
+          return;
+        }
+
+        const data = await response.json();
+        setTaskTemplates(data);
+      } catch (error) {
+        console.error("업무 템플릿 통계 가져오기 오류:", error);
+        // 오류 발생 시 임시 데이터 사용
+        const mockData: TaskTemplateWithStats[] = [
+          {
+            id: "1",
+            title: "소방 설비 점검",
+            description: "소방법에 따른 월별 소방 설비 점검 및 보고서 작성",
+            priority: "HIGH",
+            managerType: "ADMIN",
+            category: "INSPECTION",
+            createdAt: new Date(
+              Date.now() - 8 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            totalTasks: 15,
+            completedTasks: 12,
+          },
+          {
+            id: "2",
+            title: "엘리베이터 정기 점검",
+            description: "엘리베이터 안전 점검 및 유지보수 작업",
+            priority: "HIGH",
+            managerType: "ADMIN",
+            category: "MAINTENANCE",
+            createdAt: new Date(
+              Date.now() - 15 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            totalTasks: 8,
+            completedTasks: 7,
+          },
+          {
+            id: "3",
+            title: "보안 카메라 점검",
+            description: "CCTV 카메라 작동 상태 및 저장 장치 점검",
+            priority: "MEDIUM",
+            managerType: "ADMIN",
+            category: "SECURITY",
+            createdAt: new Date(
+              Date.now() - 5 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            totalTasks: 10,
+            completedTasks: 5,
+          },
+          {
+            id: "4",
+            title: "임대차 계약 갱신",
+            description: "임대차 계약 만료 및 갱신 관리",
+            priority: "HIGH",
+            managerType: "BIZ",
+            category: "CONTRACT",
+            createdAt: new Date(
+              Date.now() - 2 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            totalTasks: 6,
+            completedTasks: 2,
+          },
+        ];
+        setTaskTemplates(mockData);
+      } finally {
+        setTaskTemplatesLoading(false);
+      }
+    };
+
     fetchBuildingCount();
+    fetchTaskTemplates();
   }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
+  // 우선순위에 따른 배지 색상
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case "HIGH":
+        return "bg-[#E53935]/10 text-[#E53935]";
+      case "MEDIUM":
+        return "bg-[#FFA000]/10 text-[#FFA000]";
+      case "LOW":
+        return "bg-[#43A047]/10 text-[#43A047]";
+      case "URGENT":
+        return "bg-[#880E4F]/10 text-[#880E4F]";
+      default:
+        return "bg-[#607D8B]/10 text-[#607D8B]";
+    }
   };
 
   return (
@@ -691,6 +868,106 @@ export default function CeoDashboard() {
                 [지역별 건물 분포 인터랙티브 맵]
               </p>
             </div>
+          </section>
+
+          {/* 업무 템플릿 현황 섹션 (새로 추가) */}
+          <section className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-sm p-6 border border-[#E0E0E0] dark:border-[#333333]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-[#263238] dark:text-white">
+                최신 업무 템플릿 현황
+              </h2>
+              <Link
+                href="/tasks/templates"
+                className="text-[#1E88E5] hover:underline text-sm font-medium"
+              >
+                모두 보기
+              </Link>
+            </div>
+
+            {taskTemplatesLoading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-24 bg-[#F5F7FA] dark:bg-[#333333] rounded-lg"
+                  ></div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {taskTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="border border-[#E0E0E0] dark:border-[#333333] rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-medium text-[#263238] dark:text-white">
+                          {template.title}
+                        </h3>
+                        <p className="text-[#607D8B] dark:text-[#B0BEC5] text-sm line-clamp-1">
+                          {template.description}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadgeColor(
+                            template.priority
+                          )}`}
+                        >
+                          {template.priority}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium bg-[#1E88E5]/10 text-[#1E88E5]`}
+                        >
+                          {template.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-3">
+                      <div className="flex items-center space-x-4">
+                        <div>
+                          <p className="text-xs text-[#9E9E9E]">총 업무</p>
+                          <p className="font-medium text-[#263238] dark:text-white">
+                            {template.totalTasks}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#9E9E9E]">완료</p>
+                          <p className="font-medium text-[#43A047]">
+                            {template.completedTasks}
+                          </p>
+                        </div>
+                        <div className="w-24">
+                          <p className="text-xs text-[#9E9E9E] mb-1">진행률</p>
+                          <div className="w-full bg-[#F5F7FA] dark:bg-[#333333] rounded-full h-2">
+                            <div
+                              className="bg-[#1E88E5] h-2 rounded-full"
+                              style={{
+                                width: `${
+                                  template.totalTasks > 0
+                                    ? (template.completedTasks /
+                                        template.totalTasks) *
+                                      100
+                                    : 0
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-[#9E9E9E]">등록일</p>
+                        <p className="text-sm text-[#607D8B] dark:text-[#B0BEC5]">
+                          {formatDate(template.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </main>
       </div>

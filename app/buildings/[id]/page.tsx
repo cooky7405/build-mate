@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { use } from "react";
+import TasksList from "@/app/components/tasks/TasksList";
 
 // 건물 데이터 인터페이스
 interface Building {
@@ -23,11 +25,15 @@ interface Building {
   }>;
 }
 
+interface BuildingDetailPageProps {
+  params: {
+    id: string;
+  };
+}
+
 export default function BuildingDetailPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: BuildingDetailPageProps) {
   const router = useRouter();
 
   // Next.js 15.3.1에서 params는 Promise로 처리됨
@@ -40,6 +46,7 @@ export default function BuildingDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // 페이지 로드 시 건물 데이터 로드 및 권한 체크
   useEffect(() => {
@@ -81,6 +88,7 @@ export default function BuildingDetailPage({
     // 건물 데이터 로드
     const loadBuilding = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/buildings/${id}`);
 
         if (!response.ok) {
@@ -93,9 +101,9 @@ export default function BuildingDetailPage({
 
         const data = await response.json();
         setBuilding(data);
-      } catch (error) {
-        console.error("건물 데이터를 가져오는 중 오류:", error);
-        router.push("/buildings");
+      } catch (err) {
+        console.error("건물 데이터를 가져오는 중 오류:", err);
+        setError("건물 정보를 불러오는 중 오류가 발생했습니다");
       } finally {
         setIsLoading(false);
       }
@@ -120,9 +128,7 @@ export default function BuildingDetailPage({
   if (!building) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-[#E53935] font-semibold">
-          건물 정보를 찾을 수 없습니다.
-        </div>
+        <div className="text-[#E53935] font-semibold">{error}</div>
       </div>
     );
   }
@@ -231,22 +237,18 @@ export default function BuildingDetailPage({
         <div className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-sm p-6 mb-6 border border-[#E0E0E0] dark:border-[#333333]">
           <div className="flex flex-col md:flex-row">
             <div className="md:w-1/3 md:mr-6 mb-4 md:mb-0">
-              <div className="rounded-lg overflow-hidden h-60">
-                <img
-                  src={building.imageUrl}
+              <div className="rounded-lg overflow-hidden h-60 relative">
+                <Image
+                  src={
+                    building.imageUrl ||
+                    "/images/buildings/default-building.jpg"
+                  }
                   alt={building.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // 이미지 로드 실패 시 대체 이미지 사용
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src =
-                      "/images/buildings/default-building.jpg";
-                    // 대체 이미지도 없을 경우 배경색 설정
-                    e.currentTarget.onerror = () => {
-                      e.currentTarget.style.backgroundColor = "#f0f0f0";
-                      return true;
-                    };
-                  }}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gODAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAKAA8AwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A+oM0ZoPSqt9fQ6bZyXNzIscMYyzMf0HqT2Fck5xhFyk7JHbSpyqzUIK7ZZLKoJYgAdSTXnnjT4tWmlQva6CUuLlmK/aZFJhh9zg/M/0wPevIfHXj7VPGerSBp5LbTUc+TZxMVAHYuR95j6n8BgVzb3zBQ80hAOBtAwAD1AAr4fMM+qTn7PAws+rauvRL9T9JynhWhSp+0x8+Z9Eu38z0rW/i1r2pl0t7uO0jbbrRgH/AL6OT+tcXqGvX10zPdajcyt13PKxrM/tGDOGupj7BAtU5b2GTdmQsO4av0ngbhrFVKEcVm9Vyvd30PznOeKsHQxEsNl9NSWydtF+ZakuATjeR9aytQ1eCDpOM+jVTu9SXHAJrKubx5Opxn0rvp4SnTfvI8utjqlWPLF6H1T+y9rWo3fg/UI9TnluJLa688PK5YlWVQQCe3FeveIP25o/APefw/qfgW/Mlmw8uVL8bl8xeGDCIYODyB61wP7E2ly/wDCP+IryWMiCW4SOMkYyVBJx9N1eN/tlHxHcftC3qa1ZQw2sNhDLp6QAAQ4JMmOeh3hyDz7d6+EqrVpbH0uK4mqYGnTqUI3nO6d3pZa/h+Z9n/Bj9tLwn8TNZt9KuYbjQNUuXWK3S4O+GaQ9FWQDjPoxA9c16P46+Nng/4c2guPEfiOx05T9yOSUGWQ/wCzGuXb8Aa/FmzW1e5Rb6+ubG3Jw00NuJ9g9SjMu78M13Pw9mu/HHivRvDCeLvHN5Z6jdpCkuoaxNKICxwHdWbaccnp2ra/c+Tp57UxWLdLEtRgldR6+vz8j7a+J37Y3j7xre3Nn4ditvCWmuyqk8UYmumXvu3/ACrn/ZXI9TWJYfBPX9bjN14l1a91eeTLO00hJZu53Hk1h21rE0iqkUK7cABQB/Kuq0e9MEQXd0rTCYOKheUnr3PQ/wBZcLT/AHOE0it27v8Ar+kchf8AgXUtJcq0Dr/stVGZJoThsg+xxXpX2oOOtYWtadHdoxVQG9q8etkzofFQlp2Z7WC4hU/drxt5o5a3YnLSMcdM1BKYs4wfzqxfadJE3KH8qzpIJAflU/hXlv0Z7ybTvY+8P2ftIj0fwJpUKoFMtuJpDjq7/Nn8M4/Cvkb4j+HpfFHxU8SXUeWH9o3CJjskUjRov/jtfbdjZxz2trsj+WO3RcY44UV8o+GR/wAVTrNx1af7RKPbzHbH6EVlzOfK11ZlhMFRr1q1SotVHT1vp+R5dcfD+90bTbvWb+eG5vYoD9kSOPekTkYVsd+TXkur+JdXm1W4k+03a+Y5f5JmA5PoBX2HqF0tl4Zv5pI0eDy2jjJA4OMD881876b4N0jUYFlluLmORmJKKVC/lj+tcj1O/FYajhoKmnzPd6Ho3wv1fVdX8P8A2nVDI9wZWUF8Ekdsntiu7sb8gnBrmvD9pHp9hHBEpCAn8zWhHcjuaznLmfkdVGlyR03NuTUgtZl1qIIyaqpeBxUdxMGzzUSbWqKafvI00t7p9N2sguIVkHcVneJYRJZFscisHTvEB0+6WORv3TcfStXV9RW8st6EOK+SxGBdOpKNtj7+ni1Vgpx3OO1ezZckCufu0ljJ4rqdQRZVPesO7tQc8CvlKkXCTTP0KnJTgmjV8JX/ANp0Q2xPzWrrge0bdPzUn8a8v13TG8O+IdQsZDnyJm2NjG5D8yn8QRXb+GNRBW4snOPMHmxZ/vLww/Laf++qzfiJYefrQvEXD3MIcezp8p/kPzry2rPmR9M17Sg4S3RgXOpbkKnqOlUobkByxPeqkkZzipLMbnA716UVoeTKV5nUwSDbWVq2pCNWA71ZvLpbeLPesGeR7uTk8VnKbWiLhC+rPT8UZor7Q/Kj//Z"
                 />
               </div>
             </div>
@@ -482,6 +484,20 @@ export default function BuildingDetailPage({
             )}
           </div>
         </div>
+
+        {activeTab === "tasks" && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">이 건물의 업무 목록</h2>
+              <Link href={`/tasks/new?buildingId=${id}`}>
+                <button className="px-4 py-2 bg-green-600 text-white rounded">
+                  새 업무 추가
+                </button>
+              </Link>
+            </div>
+            <TasksList buildingId={id} />
+          </div>
+        )}
       </div>
     </div>
   );

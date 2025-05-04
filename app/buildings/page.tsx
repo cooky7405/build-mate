@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // 건물 데이터 인터페이스
 interface Building {
@@ -76,15 +77,8 @@ export default function BuildingsPage() {
     checkAuth();
   }, [router]);
 
-  // 건물 데이터 가져오기
-  useEffect(() => {
-    if (isAuthorized) {
-      fetchBuildings();
-    }
-  }, [isAuthorized, statusFilter]);
-
-  // API로부터 건물 목록 가져오기
-  const fetchBuildings = async () => {
+  // fetchBuildings 함수를 useCallback으로 감싸줍니다
+  const fetchBuildings = useCallback(async () => {
     setIsLoading(true);
     try {
       const apiUrl = `/api/buildings${
@@ -105,7 +99,13 @@ export default function BuildingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [statusFilter]); // statusFilter를 의존성으로 추가
+
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchBuildings();
+    }
+  }, [isAuthorized, fetchBuildings]); // fetchBuildings 함수를 의존성 배열에 추가
 
   // 검색 및 필터링된 건물 목록
   const filteredBuildings = buildings.filter((building) => {
@@ -373,24 +373,17 @@ export default function BuildingsPage() {
                   className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-sm overflow-hidden border border-[#E0E0E0] dark:border-[#333333] hover:shadow transition-shadow"
                 >
                   <div className="h-48 overflow-hidden relative">
-                    <img
-                      src={building.imageUrl}
+                    <Image
+                      src={
+                        building.imageUrl ||
+                        "/images/buildings/default-building.jpg"
+                      }
                       alt={building.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // 이미지 로드 실패 시 대체 이미지 또는 기본 스타일로 변경
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src =
-                          "/images/buildings/default-building.jpg";
-                        // 대체 이미지도 없을 경우 배경색 설정
-                        e.currentTarget.onerror = () => {
-                          e.currentTarget.style.backgroundColor = "#f0f0f0";
-                          e.currentTarget.style.display = "flex";
-                          e.currentTarget.style.alignItems = "center";
-                          e.currentTarget.style.justifyContent = "center";
-                          return true;
-                        };
-                      }}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,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"
                     />
                     <div className="absolute top-4 right-4">
                       <span
