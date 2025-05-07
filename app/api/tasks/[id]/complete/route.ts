@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
@@ -49,28 +49,30 @@ export async function POST(
     }
 
     // 트랜잭션으로 업무 상태 업데이트 및 완료 보고서 생성
-    const result = await prisma.$transaction(async (tx) => {
-      // 업무 상태 업데이트
-      const updatedTask = await tx.task.update({
-        where: { id },
-        data: {
-          status: "COMPLETED",
-          completedAt: new Date(),
-        },
-      });
+    const result = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // 업무 상태 업데이트
+        const updatedTask = await tx.task.update({
+          where: { id },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+          },
+        });
 
-      // 완료 보고서 생성
-      const report = await tx.taskCompletionReport.create({
-        data: {
-          taskId: id,
-          content: data.content,
-          imageUrls: "", // 기본값 또는 data에서 받아올 수 있으면 추가
-          timeSpent: 0, // 기본값 또는 data에서 받아올 수 있으면 추가
-        },
-      });
+        // 완료 보고서 생성
+        const report = await tx.taskCompletionReport.create({
+          data: {
+            taskId: id,
+            content: data.content,
+            imageUrls: "", // 기본값 또는 data에서 받아올 수 있으면 추가
+            timeSpent: 0, // 기본값 또는 data에서 받아올 수 있으면 추가
+          },
+        });
 
-      return { task: updatedTask, report };
-    });
+        return { task: updatedTask, report };
+      }
+    );
 
     return NextResponse.json(result);
   } catch (error) {
