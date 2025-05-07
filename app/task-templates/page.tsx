@@ -158,9 +158,9 @@ export default function TaskTemplatesPage() {
               업무 템플릿 현황 보기
             </button>
           </Link>
-          <Link href="/task-templates/new">
+          <Link href="/tasks/new">
             <button className="px-4 py-2 bg-blue-600 text-white rounded">
-              새 템플릿 추가
+              업무 추가
             </button>
           </Link>
         </div>
