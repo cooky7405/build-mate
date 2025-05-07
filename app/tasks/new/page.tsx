@@ -353,11 +353,25 @@ function TaskFormContent() {
     try {
       setSubmitting(true);
 
-      // assigneeId가 "none"인 경우 빈 문자열로 변환
+      // JWT 토큰에서 사용자 ID 추출
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("로그인이 필요합니다");
+      }
+      const tokenPayload = JSON.parse(atob(token.split(".")[1]));
+      const userId = tokenPayload.userId || tokenPayload.id;
+      if (!userId) {
+        throw new Error("사용자 정보를 찾을 수 없습니다");
+      }
+
+      // assigneeId가 'none'이거나 빈 문자열이면 null로 변환
       const submittingData = {
         ...formData,
-        assigneeId: formData.assigneeId === "none" ? "" : formData.assigneeId,
-        creatorId: "현재로그인한사용자ID", // 실제 구현시 세션에서 가져옴
+        assigneeId:
+          !formData.assigneeId || formData.assigneeId === "none"
+            ? null
+            : formData.assigneeId,
+        creatorId: userId,
       };
 
       const response = await fetch("/api/tasks", {

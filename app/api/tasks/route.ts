@@ -221,7 +221,7 @@ export async function POST(req: Request) {
           status: "PENDING",
           dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
           creatorId: data.creatorId, // 사용자 인증 구현 후 세션에서 가져올 예정
-          assigneeId,
+          assigneeId: !data.assigneeId ? null : data.assigneeId,
         },
         include: {
           template: true,
