@@ -55,6 +55,7 @@ interface User {
 function TaskFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const from = searchParams.get("from");
 
   // URL 쿼리 파라미터에서 buildingId와 templateId 추출
   const buildingIdParam = searchParams.get("buildingId");
@@ -389,7 +390,7 @@ function TaskFormContent() {
 
       const data = await response.json();
       alert(data.message || "업무가 성공적으로 생성되었습니다");
-      router.push("/tasks");
+      router.back();
     } catch (err: unknown) {
       console.error("업무 생성 오류:", err);
       const errorMessage =
@@ -902,8 +903,19 @@ function TaskFormContent() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" disabled={submitting}>
-              취소
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (from === "task-templates") {
+                  router.push("/task-templates");
+                } else {
+                  router.push("/tasks");
+                }
+              }}
+              disabled={submitting}
+            >
+              목록으로 돌아가기
             </Button>
             <Button type="submit" disabled={isLoading || submitting}>
               {submitting ? "생성 중..." : "업무 생성"}
