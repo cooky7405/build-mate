@@ -218,7 +218,9 @@ function TaskFormContent() {
 
     if (isSelected) {
       // 선택 해제
-      newBuildingIds = formData.buildingIds.filter((id) => id !== buildingId);
+      newBuildingIds = formData.buildingIds.filter(
+        (id: (typeof formData.buildingIds)[number]) => id !== buildingId
+      );
     } else {
       // 선택 추가
       newBuildingIds = [...formData.buildingIds, buildingId];
@@ -236,7 +238,9 @@ function TaskFormContent() {
   const handleRemoveBuilding = (buildingId: string) => {
     setFormData({
       ...formData,
-      buildingIds: formData.buildingIds.filter((id) => id !== buildingId),
+      buildingIds: formData.buildingIds.filter(
+        (id: (typeof formData.buildingIds)[number]) => id !== buildingId
+      ),
     });
   };
 
@@ -247,7 +251,7 @@ function TaskFormContent() {
     // 검색어 필터링
     if (buildingSearchTerm) {
       filtered = filtered.filter(
-        (building) =>
+        (building: (typeof buildings)[number]) =>
           building.name
             .toLowerCase()
             .includes(buildingSearchTerm.toLowerCase()) ||
@@ -260,7 +264,8 @@ function TaskFormContent() {
     // 카테고리 필터링
     if (buildingCategoryFilter !== "all") {
       filtered = filtered.filter(
-        (building) => building.category === buildingCategoryFilter
+        (building: (typeof buildings)[number]) =>
+          building.category === buildingCategoryFilter
       );
     }
 
@@ -414,7 +419,7 @@ function TaskFormContent() {
   };
 
   // 선택된 건물들 정보
-  const selectedBuildings = buildings.filter((b) =>
+  const selectedBuildings = buildings.filter((b: (typeof buildings)[number]) =>
     formData.buildingIds.includes(b.id)
   );
 
@@ -652,7 +657,7 @@ function TaskFormContent() {
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {templates.length > 0 ? (
-                      templates.map((template) => (
+                      templates.map((template: (typeof templates)[number]) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.title} (
                           {getManagerTypeLabel(template.managerType)})
@@ -666,8 +671,10 @@ function TaskFormContent() {
 
                 {formData.templateId && (
                   <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                    {templates.find((t) => t.id === formData.templateId)
-                      ?.description || ""}
+                    {templates.find(
+                      (t: (typeof templates)[number]) =>
+                        t.id === formData.templateId
+                    )?.description || ""}
                   </div>
                 )}
               </div>
@@ -721,14 +728,18 @@ function TaskFormContent() {
                         <SelectContent>
                           <SelectItem value="all">모든 카테고리</SelectItem>
                           {buildingCategories.length > 0 ? (
-                            buildingCategories.map((category) => (
-                              <SelectItem
-                                key={category}
-                                value={category || "no-category"}
-                              >
-                                {category || "분류 없음"}
-                              </SelectItem>
-                            ))
+                            buildingCategories.map(
+                              (
+                                category: (typeof buildingCategories)[number]
+                              ) => (
+                                <SelectItem
+                                  key={category}
+                                  value={category || "no-category"}
+                                >
+                                  {category || "분류 없음"}
+                                </SelectItem>
+                              )
+                            )
                           ) : (
                             <SelectItem value="no-categories">
                               카테고리 없음
@@ -784,30 +795,38 @@ function TaskFormContent() {
                               일치하는 건물이 없습니다
                             </CommandEmpty>
                             <CommandGroup>
-                              {getFilteredBuildings().map((building) => (
-                                <CommandItem
-                                  key={building.id}
-                                  value={building.id}
-                                  onSelect={() =>
-                                    handleBuildingSelection(building.id)
-                                  }
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      formData.buildingIds.includes(building.id)
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                  <div className="flex flex-col">
-                                    <span>{building.name}</span>
-                                    <span className="text-sm text-gray-500">
-                                      {building.address}
-                                    </span>
-                                  </div>
-                                </CommandItem>
-                              ))}
+                              {getFilteredBuildings().map(
+                                (
+                                  building: ReturnType<
+                                    typeof getFilteredBuildings
+                                  >[number]
+                                ) => (
+                                  <CommandItem
+                                    key={building.id}
+                                    value={building.id}
+                                    onSelect={() =>
+                                      handleBuildingSelection(building.id)
+                                    }
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        formData.buildingIds.includes(
+                                          building.id
+                                        )
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span>{building.name}</span>
+                                      <span className="text-sm text-gray-500">
+                                        {building.address}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                )
+                              )}
                             </CommandGroup>
                           </CommandList>
                         </Command>
@@ -822,26 +841,28 @@ function TaskFormContent() {
                       </label>
                       <div className="p-3 border rounded-md bg-gray-50 max-h-[200px] overflow-auto">
                         <div className="flex flex-wrap gap-2">
-                          {selectedBuildings.map((building) => (
-                            <Badge
-                              key={building.id}
-                              variant="secondary"
-                              className="px-2 py-1 flex items-center gap-1"
-                            >
-                              <span className="max-w-[150px] truncate">
-                                {building.name}
-                              </span>
-                              <button
-                                type="button"
-                                className="text-gray-500 hover:text-gray-700"
-                                onClick={() =>
-                                  handleRemoveBuilding(building.id)
-                                }
+                          {selectedBuildings.map(
+                            (building: (typeof selectedBuildings)[number]) => (
+                              <Badge
+                                key={building.id}
+                                variant="secondary"
+                                className="px-2 py-1 flex items-center gap-1"
                               >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
+                                <span className="max-w-[150px] truncate">
+                                  {building.name}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-gray-500 hover:text-gray-700"
+                                  onClick={() =>
+                                    handleRemoveBuilding(building.id)
+                                  }
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
@@ -873,7 +894,7 @@ function TaskFormContent() {
                     <SelectItem value="none">
                       담당자 미지정 (템플릿 유형에 따라 자동 할당)
                     </SelectItem>
-                    {users.map((user) => (
+                    {users.map((user: (typeof users)[number]) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name} ({user.email})
                       </SelectItem>
