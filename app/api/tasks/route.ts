@@ -154,7 +154,7 @@ export async function POST(req: Request) {
       const allBuildings = await prisma.building.findMany({
         select: { id: true },
       });
-      buildingIds = allBuildings.map((building) => building.id);
+      buildingIds = allBuildings.map((building: { id: string }) => building.id);
     } else {
       // 선택된 건물들에만 업무 할당
       buildingIds = data.buildingIds;
