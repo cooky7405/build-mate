@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, TaskTemplate } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
@@ -15,7 +15,7 @@ export async function GET() {
 
     // 각 템플릿에 대한 통계 정보 수집
     const templatesWithStats = await Promise.all(
-      templates.map(async (template) => {
+      templates.map(async (template: TaskTemplate) => {
         // 해당 템플릿에 연결된 모든 업무 개수
         const totalTasks = await prisma.task.count({
           where: {
