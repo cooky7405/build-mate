@@ -7,6 +7,13 @@ interface TemplateStatusParams {
   id: string;
 }
 
+type SimpleBuilding = {
+  id: string;
+  name: string;
+  address: string;
+  imageUrl: string | null;
+};
+
 // 특정 업무 템플릿의 빌딩별 진행 상태 조회 API
 export async function GET(
   req: Request,
@@ -47,7 +54,7 @@ export async function GET(
 
     // 각 빌딩별 업무 진행 상태 계산
     const buildingsWithStatus = await Promise.all(
-      buildings.map(async (building) => {
+      buildings.map(async (building: SimpleBuilding) => {
         // 총 업무 수
         const totalTasks = await prisma.task.count({
           where: {
