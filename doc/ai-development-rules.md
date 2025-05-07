@@ -185,4 +185,34 @@
 4. DB 스키마와 코드가 항상 동기화되도록 관리하며, 불일치로 인한 타입 에러/런타임 에러가 발생하지 않도록 한다.
 5. 위 규칙을 어기면 빌드/테스트 단계에서 반드시 에러가 발생하므로, 사전에 꼼꼼히 확인한다.
 
+## TypeScript 타입 에러 방지 규칙 (map, forEach 등 콜백 파라미터)
+
+1. 배열의 map, forEach, filter 등 콜백 함수에서 파라미터 타입이 암시적으로 any가 되지 않도록 반드시 타입을 명시한다.
+
+   - 예시:
+
+     ```typescript
+     // 잘못된 예시 (암시적 any)
+     items.map(async (item) => { ... });
+
+     // 올바른 예시 (타입 명시)
+     items.map(async (item: ItemType) => { ... });
+     // 또는, 동적으로 추론할 경우
+     items.map(async (item: typeof items[number]) => { ... });
+     ```
+
+2. Prisma 쿼리 결과 배열을 map 등으로 순회할 때, 모델 타입을 import해서 사용하거나, typeof items[number]로 타입을 추론해서 사용한다.
+   - 예시:
+     ```typescript
+     const users = await prisma.user.findMany();
+     users.map((user: typeof users[number]) => { ... });
+     ```
+3. 타입을 import할 수 없는 경우, 최소한 필요한 필드만 명시적으로 타입으로 지정한다.
+   - 예시:
+     ```typescript
+     items.map((item: { id: string }) => { ... });
+     ```
+4. 타입스크립트 strict 옵션이 켜져 있을 때는, 암시적 any 타입이 허용되지 않으므로 반드시 위 규칙을 지켜야 한다.
+5. 타입 에러가 발생하면, any 타입으로 임시 우회하지 말고, 위의 방법 중 하나로 타입을 명확히 지정한다.
+
 이 규칙들은 프로젝트 진행에 따라 지속적으로 업데이트될 수 있습니다.
