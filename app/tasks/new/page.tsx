@@ -167,28 +167,6 @@ function TaskFormContent() {
     fetchTemplates();
   }, [selectedManagerType]);
 
-  // 사용자 목록 로드
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("/api/users");
-        if (!response.ok) {
-          throw new Error("사용자 목록을 가져오는데 실패했습니다");
-        }
-        const data = await response.json();
-        setUsers(data);
-      } catch (err) {
-        console.error("사용자 목록 로드 오류:", err);
-        // 사용자 목록은 옵션이므로 실패 시 빈 배열로 처리
-        setUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
   // 입력 필드 변경 핸들러
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
