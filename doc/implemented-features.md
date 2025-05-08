@@ -188,3 +188,33 @@
 3. 대시보드 차트 데이터 시각화 구현
 4. 업무 관리 페이지 UI 구현
 5. 알림 시스템 구현
+
+## 빌딩 관리자 관리 기능
+
+### 기능 개요
+
+- 빌딩의 관리 책임자(adminManager)와 경영 책임자(bizManager)를 추가, 변경, 삭제할 수 있는 기능
+- 사용자 검색 기능을 통해 적절한 역할을 가진 사용자를 검색하고 선택할 수 있음
+
+### 기술 스택
+
+- React 상태 관리 (useState, useEffect)
+- 사용자 검색 API (디바운싱 적용)
+- 권한 기반 UI 표시
+
+### 사용자 경험
+
+- 필터링된 검색 결과를 통해 원하는 관리자를 빠르게 찾을 수 있음
+- 관리자 프로필 이미지, 이름, 이메일, 역할 정보 표시
+- 모달 UI를 통한 직관적인 사용자 선택 경험
+
+### API 엔드포인트
+
+- GET `/api/buildings/[id]/managers`: 빌딩의 관리자 정보 조회
+- PUT `/api/buildings/[id]/managers`: 빌딩의 관리자 정보 업데이트
+- GET `/api/users/search?q=[검색어]`: 사용자 검색 API
+
+### 권한 제어
+
+- SUPER_ADMIN, BUILDING_ADMIN 역할을 가진 사용자만 관리자 변경 가능
+- 적절한 역할을 가진 사용자만 선택 가능 (adminManager는 ADMIN_MANAGER 또는 더 높은 권한, bizManager는 BIZ_MANAGER 또는 더 높은 권한)

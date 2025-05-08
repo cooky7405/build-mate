@@ -17,7 +17,7 @@
    - Next.js 15.3.1에서 params, searchParams, cookies, headers 등이 모두 Promise 타입으로 변경되었습니다.
    - 반드시 await를 사용하여 비동기적으로 접근해야 합니다.
 
-2. **API 라우트 핸들러 함수에서 올바른 타입 지정:**
+2. **API 라우트 핸들러 함수에서 params 타입 정의는 반드시 Promise로 해야 합니다.**
 
    ```typescript
    // ✅ 올바른 방법 (Next.js 15.3.1)
@@ -29,10 +29,7 @@
      req: Request,
      context: { params: Promise<RouteParams> }
    ) {
-     // params에 접근할 때 await 필수
-     const params = await context.params;
-     const { id } = params;
-
+     const { id } = await context.params;
      // ... 나머지 로직
    }
    ```
@@ -46,12 +43,24 @@
      { params }: { params: { id: string } }
    ) {
      const { id } = params; // 오류 발생! params는 Promise 타입입니다.
-
      // ... 나머지 로직
    }
    ```
 
-4. **searchParams 처리 방법:**
+4. **PUT, DELETE 등 다른 메서드도 동일하게 Promise 타입으로 정의해야 합니다.**
+
+   ```typescript
+   // ✅ PUT 예시
+   export async function PUT(
+     req: Request,
+     context: { params: Promise<RouteParams> }
+   ) {
+     const { id } = await context.params;
+     // ...
+   }
+   ```
+
+5. **searchParams 처리 방법:**
 
    ```typescript
    // ✅ 올바른 방법 (Next.js 15.3.1)
@@ -64,7 +73,7 @@
    }
    ```
 
-5. **다이나믹 라우트의 타입 정의 패턴:**
+6. **다이나믹 라우트의 타입 정의 패턴:**
 
    ```typescript
    // 여러 파라미터가 있는 경우
@@ -216,3 +225,12 @@
 5. 타입 에러가 발생하면, any 타입으로 임시 우회하지 말고, 위의 방법 중 하나로 타입을 명확히 지정한다.
 
 이 규칙들은 프로젝트 진행에 따라 지속적으로 업데이트될 수 있습니다.
+
+# 추가 실수 방지 규칙
+
+- 타입스크립트에서 any 타입 사용을 금지하고, 명확한 타입(인터페이스/타입 별칭 등)을 정의해서 사용할 것
+- 사용하지 않는 변수는 선언하지 않거나, 불가피할 경우 주석으로 남길 것
+- React의 useEffect/useState 등 Hook은 항상 컴포넌트 최상위에서 호출하고, 조건문 안에서 호출하지 말 것
+- useEffect의 의존성 배열에는 함수(예: searchUsers)가 포함될 경우 useCallback으로 감싸거나 의존성 배열에 반드시 추가할 것
+- Next.js에서는 <img> 태그 대신 next/image의 <Image /> 컴포넌트를 사용할 것 (이미지 최적화 및 LCP 개선)
+- API에서 role 등 타입이 string | undefined일 수 있는 경우, includes 등 비교 시 명확하게 string으로 변환해서 사용할 것 (예: role ?? "")

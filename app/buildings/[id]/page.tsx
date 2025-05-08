@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -33,32 +33,50 @@ interface BuildingDetailPageProps {
   params: Promise<BuildingParams>;
 }
 
+// 사용자 요약 타입 정의
+interface UserSummary {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phoneNumber?: string;
+  profileImage?: string;
+}
+
 export default function BuildingDetailPage({
   params,
 }: BuildingDetailPageProps) {
   const router = useRouter();
-
-  // Next.js 15.3.1에서 params는 Promise로 처리됨
   const { id } = use(params);
 
+  // 상태 정의
   const [building, setBuilding] = useState<Building | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminManager, setAdminManager] = useState<UserSummary | null>(null);
+  const [bizManager, setBizManager] = useState<UserSummary | null>(null);
+  const [searchResults, setSearchResults] = useState<UserSummary[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [selectedManager, setSelectedManager] = useState<
+    "admin" | "biz" | null
+  >(null);
+  const [showManagerModal, setShowManagerModal] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  // 페이지 로드 시 건물 데이터 로드 및 권한 체크
+  // 권한 및 데이터 로드
   useEffect(() => {
     // 권한 확인
     const checkAuth = () => {
       const token = localStorage.getItem("token");
-
       if (!token) {
         router.push("/auth/login");
         return;
       }
-
       try {
         const base64Url = token.split(".")[1];
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -68,10 +86,8 @@ export default function BuildingDetailPage({
             .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
             .join("")
         );
-
         const { role } = JSON.parse(jsonPayload);
         setUserRole(role);
-
         if (
           ["SUPER_ADMIN", "BUILDING_ADMIN", "BUILDING_MANAGER"].includes(role)
         ) {
@@ -84,13 +100,11 @@ export default function BuildingDetailPage({
         router.push("/auth/login");
       }
     };
-
     // 건물 데이터 로드
     const loadBuilding = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(`/api/buildings/${id}`);
-
         if (!response.ok) {
           if (response.status === 404) {
             router.push("/buildings");
@@ -98,7 +112,6 @@ export default function BuildingDetailPage({
           }
           throw new Error("건물 데이터를 가져오는 중 오류가 발생했습니다.");
         }
-
         const data = await response.json();
         setBuilding(data);
       } catch (err) {
@@ -108,10 +121,124 @@ export default function BuildingDetailPage({
         setIsLoading(false);
       }
     };
-
+    // 건물 관리자 정보 불러오기
+    const loadBuildingManagers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const response = await fetch(`/api/buildings/${id}/managers`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          throw new Error("관리자 정보를 불러오는 중 오류가 발생했습니다.");
+        }
+        const data = await response.json();
+        setAdminManager(data.adminManager);
+        setBizManager(data.bizManager);
+      } catch (err) {
+        console.error("관리자 정보를 불러오는 중 오류:", err);
+      }
+    };
     checkAuth();
     loadBuilding();
+    loadBuildingManagers();
   }, [id, router]);
+
+  // 사용자 검색 (최상위 useCallback)
+  const searchUsers = useCallback(async () => {
+    if (searchTerm.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      setSearchLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const response = await fetch(
+        `/api/users/search?q=${encodeURIComponent(searchTerm)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("사용자 검색 중 오류가 발생했습니다.");
+      }
+      const data = await response.json();
+      setSearchResults(data.users || []);
+    } catch (err) {
+      console.error("사용자 검색 중 오류:", err);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [searchTerm]);
+
+  // 검색어 변경 시 사용자 검색 (최상위 useEffect)
+  useEffect(() => {
+    if (isSearching) {
+      const delayDebounce = setTimeout(() => {
+        searchUsers();
+      }, 300);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [searchTerm, isSearching, searchUsers]);
+
+  // 관리자 선택 모달 열기
+  const openManagerModal = (type: "admin" | "biz") => {
+    setSelectedManager(type);
+    setSearchTerm("");
+    setSearchResults([]);
+    setIsSearching(true);
+    setShowManagerModal(true);
+  };
+
+  // 관리자 선택
+  const selectManager = (user: UserSummary) => {
+    if (selectedManager === "admin") {
+      setAdminManager(user);
+    } else if (selectedManager === "biz") {
+      setBizManager(user);
+    }
+    setShowManagerModal(false);
+    setIsSearching(false);
+  };
+
+  // 관리자 삭제
+  const removeManager = (type: "admin" | "biz") => {
+    if (type === "admin") {
+      setAdminManager(null);
+    } else if (type === "biz") {
+      setBizManager(null);
+    }
+  };
+
+  // 변경사항 저장
+  const saveChanges = async () => {
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const response = await fetch(`/api/buildings/${id}/managers`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          adminManagerId: adminManager?.id || null,
+          bizManagerId: bizManager?.id || null,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("관리자 정보 업데이트 중 오류가 발생했습니다.");
+      }
+      alert("관리자 정보가 성공적으로 업데이트되었습니다.");
+    } catch (err) {
+      console.error("관리자 정보 업데이트 중 오류:", err);
+      alert("관리자 정보 업데이트 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // 권한 확인 중 또는 데이터 로딩 중
   if (!isAuthorized || isLoading) {
@@ -328,6 +455,16 @@ export default function BuildingDetailPage({
             </button>
             <button
               className={`px-6 py-3 text-sm font-medium ${
+                activeTab === "managers"
+                  ? "text-[#1E88E5] border-b-2 border-[#1E88E5]"
+                  : "text-[#607D8B] dark:text-[#B0BEC5] hover:text-[#1E88E5]"
+              }`}
+              onClick={() => setActiveTab("managers")}
+            >
+              관리자
+            </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${
                 activeTab === "tenants"
                   ? "text-[#1E88E5] border-b-2 border-[#1E88E5]"
                   : "text-[#607D8B] dark:text-[#B0BEC5] hover:text-[#1E88E5]"
@@ -372,6 +509,154 @@ export default function BuildingDetailPage({
                   <p className="text-[#607D8B] dark:text-[#B0BEC5]">
                     현재 세부 정보가 준비 중입니다. 추후 업데이트될 예정입니다.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "managers" && (
+              <div>
+                <h2 className="text-xl font-semibold text-[#263238] dark:text-white mb-4">
+                  빌딩 관리자 설정
+                </h2>
+                <p className="text-[#607D8B] dark:text-[#B0BEC5] mb-6">
+                  빌딩의 관리 책임자와 경영 책임자를 지정할 수 있습니다.
+                </p>
+
+                <div className="space-y-6">
+                  {/* 관리 책임자 섹션 */}
+                  <div className="bg-[#F5F7FA] dark:bg-[#262626] p-4 rounded-lg">
+                    <h3 className="font-medium mb-2 text-[#263238] dark:text-white">
+                      관리 책임자
+                    </h3>
+                    <p className="text-sm text-[#607D8B] dark:text-[#B0BEC5] mb-4">
+                      시설 및 운영 관리를 담당합니다.
+                    </p>
+
+                    {adminManager ? (
+                      <div className="flex items-center justify-between bg-white dark:bg-[#1E1E1E] p-3 rounded-lg shadow-sm mb-2">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-[#E0E0E0] dark:bg-[#333333] flex items-center justify-center overflow-hidden">
+                            {adminManager.profileImage ? (
+                              <Image
+                                src={adminManager.profileImage}
+                                alt={adminManager.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[#9E9E9E]">
+                                {adminManager.name.substring(0, 1)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-3">
+                            <p className="font-medium text-[#263238] dark:text-white">
+                              {adminManager.name}
+                            </p>
+                            <p className="text-sm text-[#9E9E9E]">
+                              {adminManager.email}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeManager("admin")}
+                          className="text-[#E53935] hover:text-[#C62828] text-sm"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-[#9E9E9E] mb-4">
+                          지정된 관리 책임자가 없습니다.
+                        </p>
+                      </div>
+                    )}
+
+                    {["SUPER_ADMIN", "BUILDING_ADMIN"].includes(
+                      userRole as string
+                    ) && (
+                      <button
+                        onClick={() => openManagerModal("admin")}
+                        className="w-full mt-2 bg-[#1E88E5]/10 hover:bg-[#1E88E5]/20 text-[#1E88E5] py-2 rounded-lg text-sm transition-colors"
+                      >
+                        {adminManager ? "관리 책임자 변경" : "관리 책임자 추가"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 경영 책임자 섹션 */}
+                  <div className="bg-[#F5F7FA] dark:bg-[#262626] p-4 rounded-lg">
+                    <h3 className="font-medium mb-2 text-[#263238] dark:text-white">
+                      경영 책임자
+                    </h3>
+                    <p className="text-sm text-[#607D8B] dark:text-[#B0BEC5] mb-4">
+                      계약 및 재무 관리를 담당합니다.
+                    </p>
+
+                    {bizManager ? (
+                      <div className="flex items-center justify-between bg-white dark:bg-[#1E1E1E] p-3 rounded-lg shadow-sm mb-2">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-[#E0E0E0] dark:bg-[#333333] flex items-center justify-center overflow-hidden">
+                            {bizManager.profileImage ? (
+                              <Image
+                                src={bizManager.profileImage}
+                                alt={bizManager.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[#9E9E9E]">
+                                {bizManager.name.substring(0, 1)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-3">
+                            <p className="font-medium text-[#263238] dark:text-white">
+                              {bizManager.name}
+                            </p>
+                            <p className="text-sm text-[#9E9E9E]">
+                              {bizManager.email}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeManager("biz")}
+                          className="text-[#E53935] hover:text-[#C62828] text-sm"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-[#9E9E9E] mb-4">
+                          지정된 경영 책임자가 없습니다.
+                        </p>
+                      </div>
+                    )}
+
+                    {["SUPER_ADMIN", "BUILDING_ADMIN"].includes(
+                      userRole as string
+                    ) && (
+                      <button
+                        onClick={() => openManagerModal("biz")}
+                        className="w-full mt-2 bg-[#1E88E5]/10 hover:bg-[#1E88E5]/20 text-[#1E88E5] py-2 rounded-lg text-sm transition-colors"
+                      >
+                        {bizManager ? "경영 책임자 변경" : "경영 책임자 추가"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 저장 버튼 */}
+                  {["SUPER_ADMIN", "BUILDING_ADMIN"].includes(
+                    userRole as string
+                  ) && (
+                    <button
+                      onClick={saveChanges}
+                      disabled={isSaving}
+                      className="w-full bg-[#1E88E5] hover:bg-[#1976D2] text-white py-3 rounded-lg font-medium transition-colors disabled:bg-[#B0BEC5] disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? "저장 중..." : "변경사항 저장"}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -484,6 +769,129 @@ export default function BuildingDetailPage({
             )}
           </div>
         </div>
+
+        {/* 관리자 선택 모달 */}
+        {showManagerModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#1E1E1E] rounded-xl w-full max-w-md shadow-lg overflow-hidden">
+              <div className="p-4 border-b border-[#E0E0E0] dark:border-[#333333]">
+                <h3 className="text-lg font-semibold text-[#263238] dark:text-white">
+                  {selectedManager === "admin"
+                    ? "관리 책임자 선택"
+                    : "경영 책임자 선택"}
+                </h3>
+              </div>
+
+              <div className="p-4">
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="이름 또는 이메일로 검색 (최소 2글자)"
+                    className="w-full p-2 pr-10 border border-[#E0E0E0] dark:border-[#333333] rounded-lg bg-white dark:bg-[#262626] text-[#263238] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1E88E5]"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {searchLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#1E88E5]"></div>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-[#9E9E9E]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    <div className="space-y-2">
+                      {searchResults.map((user) => (
+                        <div
+                          key={user.id}
+                          onClick={() => selectManager(user)}
+                          className="flex items-center p-2 hover:bg-[#F5F7FA] dark:hover:bg-[#262626] rounded-lg cursor-pointer"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#E0E0E0] dark:bg-[#333333] flex items-center justify-center overflow-hidden mr-3">
+                            {user.profileImage ? (
+                              <Image
+                                src={user.profileImage}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[#9E9E9E]">
+                                {user.name.substring(0, 1)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-[#263238] dark:text-white">
+                              {user.name}
+                            </p>
+                            <div className="flex items-center">
+                              <p className="text-sm text-[#9E9E9E]">
+                                {user.email}
+                              </p>
+                              <span className="mx-2 text-[#9E9E9E]">•</span>
+                              <p className="text-xs bg-[#E0E0E0] dark:bg-[#333333] px-2 py-0.5 rounded-full text-[#616161] dark:text-[#B0BEC5]">
+                                {user.role === "ADMIN_MANAGER"
+                                  ? "관리 책임자"
+                                  : user.role === "BIZ_MANAGER"
+                                  ? "경영 책임자"
+                                  : user.role === "BUILDING_ADMIN"
+                                  ? "빌딩 관리자"
+                                  : user.role === "BUILDING_MANAGER"
+                                  ? "일반 관리자"
+                                  : user.role === "SUPER_ADMIN"
+                                  ? "슈퍼 관리자"
+                                  : "일반 사용자"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      {searchTerm.length < 2 ? (
+                        <p className="text-[#9E9E9E]">
+                          최소 2글자 이상 입력하세요
+                        </p>
+                      ) : searchLoading ? (
+                        <p className="text-[#9E9E9E]">검색 중...</p>
+                      ) : (
+                        <p className="text-[#9E9E9E]">검색 결과가 없습니다</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-[#E0E0E0] dark:border-[#333333] flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowManagerModal(false);
+                    setIsSearching(false);
+                  }}
+                  className="px-4 py-2 text-[#9E9E9E] hover:text-[#616161] text-sm"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === "tasks" && (
           <div className="bg-white shadow rounded-lg p-6">
